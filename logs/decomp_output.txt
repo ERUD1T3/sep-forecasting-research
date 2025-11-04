@@ -1,0 +1,724 @@
+paperspace@psq5joy8a60j:~/sep-forecasting-research$ python load_get_decomps.py 
+2025-11-04 17:29:58.094431: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-11-04 17:29:58.094483: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-11-04 17:29:58.095604: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-11-04 17:29:58.102155: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-11-04 17:29:58.843462: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+
+################################################################################
+# MSE DECOMPOSITION ANALYSIS: CISIR vs CISIR w/o wPCC
+# ============================================================================
+# Computing Murphy (1988) MSE decomposition terms for SEP-EC forecasting
+################################################################################
+
+================================================================================
+GPU CONFIGURATION
+================================================================================
+2025-11-04 17:30:00.860148: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:00.893610: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:00.893811: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+✓ GPU detected: 1 device(s) available
+  - /physical_device:GPU:0
+  Models will run on GPU for faster inference
+
+Processing 5 random seeds: [456789, 42, 123, 0, 9999]
+
+================================================================================
+STEP 1: LOADING TEST DATASET
+================================================================================
+Data directory: /home/paperspace/sep-forecasting-research/data/testing
+Inputs: ['e0.5', 'e4.4', 'p6.1', 'p']
+Outputs: ['delta_p']
+✓ Test set loaded: X_test=(11839, 124), y_test=(11839, 1)
+
+================================================================================
+STEP 2: FINDING MODEL FILES
+================================================================================
+Searching for CISIR and CISIR w/o wPCC models for each seed...
+  Seed 456789:
+    CISIR w/o wPCC: final_model_456789_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-152129_reg.h5
+    CISIR (w/ wPCC): final_model_456789_amse0.01_apcc0.00_quc_20250404-173929_reg.h5
+  Seed 42:
+    CISIR w/o wPCC: final_model_42_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-171412_reg.h5
+    CISIR (w/ wPCC): final_model_42_amse0.01_apcc0.00_quc_20250404-194722_reg.h5
+  Seed 123:
+    CISIR w/o wPCC: final_model_123_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-190945_reg.h5
+    CISIR (w/ wPCC): final_model_123_amse0.01_apcc0.00_quc_20250404-220140_reg.h5
+  Seed 0:
+    CISIR w/o wPCC: final_model_0_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-205936_reg.h5
+    CISIR (w/ wPCC): final_model_0_amse0.01_apcc0.00_quc_20250404-235354_reg.h5
+  Seed 9999:
+    CISIR w/o wPCC: final_model_9999_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-225406_reg.h5
+    CISIR (w/ wPCC): final_model_9999_amse0.01_apcc0.00_quc_20250405-014932_reg.h5
+
+✓ Found models for 5/5 seeds
+
+================================================================================
+STEP 3: COMPUTING MSE DECOMPOSITIONS FOR EACH SEED
+================================================================================
+
+
+################################################################################
+# SEED 1/5: 0
+################################################################################
+
+================================================================================
+COMPUTING MSE DECOMPOSITION FOR TABLE
+================================================================================
+Rare event threshold: δ ≥ 0.5
+
+[STEP 1/4] Loading model WITHOUT wPCC (CISIR w/o wPCC)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_0_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-205936_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+2025-11-04 17:30:01.653749: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.653973: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.654084: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.736415: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.736604: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.736731: I external/local_xla/xla/stream_executor/cuda/cuda_executor.cc:901] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero. See more at https://github.com/torvalds/linux/blob/v6.0/Documentation/ABI/testing/sysfs-bus-pci#L344-L355
+2025-11-04 17:30:01.736831: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1929] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 37399 MB memory:  -> device: 0, name: NVIDIA A100-SXM4-40GB, pci bus id: 0000:00:05.0, compute capability: 8.0
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 2/4] Loading model WITH wPCC (CISIR)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_0_amse0.01_apcc0.00_quc_20250404-235354_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 3/4] Identifying rare samples...
+  Total test samples: 11839
+  Rare samples (δ ≥ 0.5): 112 (0.9%)
+  Common samples (δ < 0.5): 11727 (99.1%)
+
+[STEP 4/4] Computing MSE decompositions...
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - ALL TEST SAMPLES (n=11839)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.119993
+    SD(y_true)=0.129218, SD(y_pred)=1.274877
+    PCC(y_true, y_pred)=0.063443
+    Term 1 (mean mismatch): 0.013844
+    Term 2 (SD mismatch): 1.312536
+    Term 3 (corr deficit): 0.308571
+    MSE (direct calculation): 1.634814
+    MSE (sum of decomposition): 1.634951
+    Decomposition error: 0.0001369903
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.211314
+    SD(y_true)=0.129218, SD(y_pred)=0.128527
+    PCC(y_true, y_pred)=0.281959
+    Term 1 (mean mismatch): 0.043673
+    Term 2 (SD mismatch): 0.000000
+    Term 3 (corr deficit): 0.023850
+    MSE (direct calculation): 0.067522
+    MSE (sum of decomposition): 0.067524
+    Decomposition error: 0.0000020104
+    WARNING: Large decomposition error detected!
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - RARE TEST SAMPLES (n=112, δ ≥ 0.5)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.073141
+    SD(y_true)=0.250779, SD(y_pred)=1.198042
+    PCC(y_true, y_pred)=0.386586
+    Term 1 (mean mismatch): 0.461390
+    Term 2 (SD mismatch): 0.897307
+    Term 3 (corr deficit): 0.368593
+    MSE (direct calculation): 1.715987
+    MSE (sum of decomposition): 1.727290
+    Decomposition error: 0.0113027733
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.452084
+    SD(y_true)=0.250779, SD(y_pred)=0.452533
+    PCC(y_true, y_pred)=0.691619
+    Term 1 (mean mismatch): 0.090189
+    Term 2 (SD mismatch): 0.040705
+    Term 3 (corr deficit): 0.069994
+    MSE (direct calculation): 0.199899
+    MSE (sum of decomposition): 0.200887
+    Decomposition error: 0.0009883757
+    WARNING: Large decomposition error detected!
+
+================================================================================
+SEED 0 - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.013844, sd=1.312536, corr=0.308571
+  With wPCC:    mean=0.043673, sd=0.000000, corr=0.023850
+
+RARE subset:
+  Without wPCC: mean=0.461390, sd=0.897307, corr=0.368593
+  With wPCC:    mean=0.090189, sd=0.040705, corr=0.069994
+
+
+################################################################################
+# SEED 2/5: 42
+################################################################################
+
+================================================================================
+COMPUTING MSE DECOMPOSITION FOR TABLE
+================================================================================
+Rare event threshold: δ ≥ 0.5
+
+[STEP 1/4] Loading model WITHOUT wPCC (CISIR w/o wPCC)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_42_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-171412_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 2/4] Loading model WITH wPCC (CISIR)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_42_amse0.01_apcc0.00_quc_20250404-194722_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 3/4] Identifying rare samples...
+  Total test samples: 11839
+  Rare samples (δ ≥ 0.5): 112 (0.9%)
+  Common samples (δ < 0.5): 11727 (99.1%)
+
+[STEP 4/4] Computing MSE decompositions...
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - ALL TEST SAMPLES (n=11839)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.574089
+    SD(y_true)=0.129218, SD(y_pred)=1.214998
+    PCC(y_true, y_pred)=0.031191
+    Term 1 (mean mismatch): 0.326903
+    Term 2 (SD mismatch): 1.178918
+    Term 3 (corr deficit): 0.304205
+    MSE (direct calculation): 1.809901
+    MSE (sum of decomposition): 1.810026
+    Decomposition error: 0.0001252072
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.138166
+    SD(y_true)=0.129218, SD(y_pred)=0.102883
+    PCC(y_true, y_pred)=0.285620
+    Term 1 (mean mismatch): 0.018450
+    Term 2 (SD mismatch): 0.000694
+    Term 3 (corr deficit): 0.018994
+    MSE (direct calculation): 0.038137
+    MSE (sum of decomposition): 0.038138
+    Decomposition error: 0.0000016628
+    WARNING: Large decomposition error detected!
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - RARE TEST SAMPLES (n=112, δ ≥ 0.5)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.537015
+    SD(y_true)=0.250779, SD(y_pred)=1.115780
+    PCC(y_true, y_pred)=0.304151
+    Term 1 (mean mismatch): 0.046390
+    Term 2 (SD mismatch): 0.748226
+    Term 3 (corr deficit): 0.389417
+    MSE (direct calculation): 1.173876
+    MSE (sum of decomposition): 1.184033
+    Decomposition error: 0.0101573817
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.323168
+    SD(y_true)=0.250779, SD(y_pred)=0.387251
+    PCC(y_true, y_pred)=0.755392
+    Term 1 (mean mismatch): 0.184239
+    Term 2 (SD mismatch): 0.018625
+    Term 3 (corr deficit): 0.047510
+    MSE (direct calculation): 0.249783
+    MSE (sum of decomposition): 0.250373
+    Decomposition error: 0.0005904726
+    WARNING: Large decomposition error detected!
+
+================================================================================
+SEED 42 - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.326903, sd=1.178918, corr=0.304205
+  With wPCC:    mean=0.018450, sd=0.000694, corr=0.018994
+
+RARE subset:
+  Without wPCC: mean=0.046390, sd=0.748226, corr=0.389417
+  With wPCC:    mean=0.184239, sd=0.018625, corr=0.047510
+
+
+################################################################################
+# SEED 3/5: 123
+################################################################################
+
+================================================================================
+COMPUTING MSE DECOMPOSITION FOR TABLE
+================================================================================
+Rare event threshold: δ ≥ 0.5
+
+[STEP 1/4] Loading model WITHOUT wPCC (CISIR w/o wPCC)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_123_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-190945_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 2/4] Loading model WITH wPCC (CISIR)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_123_amse0.01_apcc0.00_quc_20250404-220140_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 3/4] Identifying rare samples...
+  Total test samples: 11839
+  Rare samples (δ ≥ 0.5): 112 (0.9%)
+  Common samples (δ < 0.5): 11727 (99.1%)
+
+[STEP 4/4] Computing MSE decompositions...
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - ALL TEST SAMPLES (n=11839)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.164143
+    SD(y_true)=0.129218, SD(y_pred)=1.168857
+    PCC(y_true, y_pred)=0.009265
+    Term 1 (mean mismatch): 0.026182
+    Term 2 (SD mismatch): 1.080849
+    Term 3 (corr deficit): 0.299275
+    MSE (direct calculation): 1.406190
+    MSE (sum of decomposition): 1.406306
+    Decomposition error: 0.0001166023
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.128959
+    SD(y_true)=0.129218, SD(y_pred)=0.155101
+    PCC(y_true, y_pred)=0.255757
+    Term 1 (mean mismatch): 0.016034
+    Term 2 (SD mismatch): 0.000670
+    Term 3 (corr deficit): 0.029832
+    MSE (direct calculation): 0.046533
+    MSE (sum of decomposition): 0.046536
+    Decomposition error: 0.0000025759
+    WARNING: Large decomposition error detected!
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - RARE TEST SAMPLES (n=112, δ ≥ 0.5)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=-0.129364
+    SD(y_true)=0.250779, SD(y_pred)=1.053727
+    PCC(y_true, y_pred)=0.381788
+    Term 1 (mean mismatch): 0.777503
+    Term 2 (SD mismatch): 0.644725
+    Term 3 (corr deficit): 0.326729
+    MSE (direct calculation): 1.740283
+    MSE (sum of decomposition): 1.748957
+    Decomposition error: 0.0086735926
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.351778
+    SD(y_true)=0.250779, SD(y_pred)=0.432416
+    PCC(y_true, y_pred)=0.700472
+    Term 1 (mean mismatch): 0.160496
+    Term 2 (SD mismatch): 0.032992
+    Term 3 (corr deficit): 0.064962
+    MSE (direct calculation): 0.257576
+    MSE (sum of decomposition): 0.258450
+    Decomposition error: 0.0008746177
+    WARNING: Large decomposition error detected!
+
+================================================================================
+SEED 123 - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.026182, sd=1.080849, corr=0.299275
+  With wPCC:    mean=0.016034, sd=0.000670, corr=0.029832
+
+RARE subset:
+  Without wPCC: mean=0.777503, sd=0.644725, corr=0.326729
+  With wPCC:    mean=0.160496, sd=0.032992, corr=0.064962
+
+
+################################################################################
+# SEED 4/5: 9999
+################################################################################
+
+================================================================================
+COMPUTING MSE DECOMPOSITION FOR TABLE
+================================================================================
+Rare event threshold: δ ≥ 0.5
+
+[STEP 1/4] Loading model WITHOUT wPCC (CISIR w/o wPCC)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_9999_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-225406_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 2/4] Loading model WITH wPCC (CISIR)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_9999_amse0.01_apcc0.00_quc_20250405-014932_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 3/4] Identifying rare samples...
+  Total test samples: 11839
+  Rare samples (δ ≥ 0.5): 112 (0.9%)
+  Common samples (δ < 0.5): 11727 (99.1%)
+
+[STEP 4/4] Computing MSE decompositions...
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - ALL TEST SAMPLES (n=11839)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.521480
+    SD(y_true)=0.129218, SD(y_pred)=1.197282
+    PCC(y_true, y_pred)=0.029609
+    Term 1 (mean mismatch): 0.269512
+    Term 2 (SD mismatch): 1.140761
+    Term 3 (corr deficit): 0.300259
+    MSE (direct calculation): 1.710410
+    MSE (sum of decomposition): 1.710532
+    Decomposition error: 0.0001214760
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.116335
+    SD(y_true)=0.129218, SD(y_pred)=0.133163
+    PCC(y_true, y_pred)=0.263803
+    Term 1 (mean mismatch): 0.012996
+    Term 2 (SD mismatch): 0.000016
+    Term 3 (corr deficit): 0.025336
+    MSE (direct calculation): 0.038345
+    MSE (sum of decomposition): 0.038347
+    Decomposition error: 0.0000021389
+    WARNING: Large decomposition error detected!
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - RARE TEST SAMPLES (n=112, δ ≥ 0.5)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.379281
+    SD(y_true)=0.250779, SD(y_pred)=1.138571
+    PCC(y_true, y_pred)=0.303433
+    Term 1 (mean mismatch): 0.139216
+    Term 2 (SD mismatch): 0.788173
+    Term 3 (corr deficit): 0.397781
+    MSE (direct calculation): 1.314582
+    MSE (sum of decomposition): 1.325171
+    Decomposition error: 0.0105887941
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.341126
+    SD(y_true)=0.250779, SD(y_pred)=0.422852
+    PCC(y_true, y_pred)=0.666266
+    Term 1 (mean mismatch): 0.169145
+    Term 2 (SD mismatch): 0.029609
+    Term 3 (corr deficit): 0.070780
+    MSE (direct calculation): 0.268638
+    MSE (sum of decomposition): 0.269534
+    Decomposition error: 0.0008963198
+    WARNING: Large decomposition error detected!
+
+================================================================================
+SEED 9999 - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.269512, sd=1.140761, corr=0.300259
+  With wPCC:    mean=0.012996, sd=0.000016, corr=0.025336
+
+RARE subset:
+  Without wPCC: mean=0.139216, sd=0.788173, corr=0.397781
+  With wPCC:    mean=0.169145, sd=0.029609, corr=0.070780
+
+
+################################################################################
+# SEED 5/5: 456789
+################################################################################
+
+================================================================================
+COMPUTING MSE DECOMPOSITION FOR TABLE
+================================================================================
+Rare event threshold: δ ≥ 0.5
+
+[STEP 1/4] Loading model WITHOUT wPCC (CISIR w/o wPCC)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_456789_amse0.01_apcc0.00_lambda0.00_quc_ssb_20250504-152129_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 2/4] Loading model WITH wPCC (CISIR)...
+  Loading model from: /home/paperspace/sep-forecasting-research/models/final_model_456789_amse0.01_apcc0.00_quc_20250404-173929_reg.h5
+  Input features: 124
+  Model architecture: [2048, 128, 1024, 128, 512, 128, 256, 128]
+  Output dimension: 1
+  ✓ Successfully loaded model weights
+  Generating predictions for 11839 samples...
+  ✓ Extracted forecast from multi-output model
+  ✓ Predictions generated: shape=(11839, 1)
+
+[STEP 3/4] Identifying rare samples...
+  Total test samples: 11839
+  Rare samples (δ ≥ 0.5): 112 (0.9%)
+  Common samples (δ < 0.5): 11727 (99.1%)
+
+[STEP 4/4] Computing MSE decompositions...
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - ALL TEST SAMPLES (n=11839)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.295960
+    SD(y_true)=0.129218, SD(y_pred)=1.260732
+    PCC(y_true, y_pred)=0.053402
+    Term 1 (mean mismatch): 0.086216
+    Term 2 (SD mismatch): 1.280325
+    Term 3 (corr deficit): 0.308419
+    MSE (direct calculation): 1.674825
+    MSE (sum of decomposition): 1.674960
+    Decomposition error: 0.0001343891
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 11839 samples...
+    Mean(y_true)=0.002334, Mean(y_pred)=0.173533
+    SD(y_true)=0.129218, SD(y_pred)=0.157775
+    PCC(y_true, y_pred)=0.280428
+    Term 1 (mean mismatch): 0.029309
+    Term 2 (SD mismatch): 0.000816
+    Term 3 (corr deficit): 0.029340
+    MSE (direct calculation): 0.059462
+    MSE (sum of decomposition): 0.059465
+    Decomposition error: 0.0000025488
+    WARNING: Large decomposition error detected!
+
+--------------------------------------------------------------------------------
+MSE DECOMPOSITION - RARE TEST SAMPLES (n=112, δ ≥ 0.5)
+--------------------------------------------------------------------------------
+
+  Model: CISIR w/o wPCC
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.114857
+    SD(y_true)=0.250779, SD(y_pred)=1.191912
+    PCC(y_true, y_pred)=0.380925
+    Term 1 (mean mismatch): 0.406458
+    Term 2 (SD mismatch): 0.885731
+    Term 3 (corr deficit): 0.370092
+    MSE (direct calculation): 1.651069
+    MSE (sum of decomposition): 1.662281
+    Decomposition error: 0.0112126611
+    WARNING: Large decomposition error detected!
+
+  Model: CISIR (with wPCC)
+    Computing MSE decomposition for 112 samples...
+    Mean(y_true)=0.752398, Mean(y_pred)=0.374079
+    SD(y_true)=0.250779, SD(y_pred)=0.379822
+    PCC(y_true, y_pred)=0.702787
+    Term 1 (mean mismatch): 0.143125
+    Term 2 (SD mismatch): 0.016652
+    Term 3 (corr deficit): 0.056620
+    MSE (direct calculation): 0.215743
+    MSE (sum of decomposition): 0.216397
+    Decomposition error: 0.0006542033
+    WARNING: Large decomposition error detected!
+
+================================================================================
+SEED 456789 - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.086216, sd=1.280325, corr=0.308419
+  With wPCC:    mean=0.029309, sd=0.000816, corr=0.029340
+
+RARE subset:
+  Without wPCC: mean=0.406458, sd=0.885731, corr=0.370092
+  With wPCC:    mean=0.143125, sd=0.016652, corr=0.056620
+
+
+================================================================================
+STEP 4: AVERAGING RESULTS ACROSS ALL SEEDS
+================================================================================
+
+  Averaging results across 5 seeds...
+  ✓ Averaged complete
+
+================================================================================
+SEED AVERAGE - DETAILED RESULTS
+================================================================================
+
+ALL subset:
+  Without wPCC: mean=0.144531, sd=1.198678, corr=0.304146
+  With wPCC:    mean=0.024092, sd=0.000439, corr=0.025471
+
+RARE subset:
+  Without wPCC: mean=0.366192, sd=0.792833, corr=0.370522
+  With wPCC:    mean=0.149439, sd=0.027716, corr=0.061973
+
+
+================================================================================
+LATEX TABLES - INDIVIDUAL SEEDS
+================================================================================
+
+--- Seed 0 ---
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.0138 & 0.0437 & \textbf{+0.0298} & \textbf{+215.5} & 1.3125 & 0.0000 & \textbf{-1.3125} & \textbf{-100.0} & 0.3086 & 0.0239 & \textbf{-0.2847} & \textbf{-92.3} \\
+Rare & 0.4614 & 0.0902 & \textbf{-0.3712} & \textbf{-80.5} & 0.8973 & 0.0407 & \textbf{-0.8566} & \textbf{-95.5} & 0.3686 & 0.0700 & \textbf{-0.2986} & \textbf{-81.0} \\
+
+
+--- Seed 42 ---
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.3269 & 0.0185 & \textbf{-0.3085} & \textbf{-94.4} & 1.1789 & 0.0007 & \textbf{-1.1782} & \textbf{-99.9} & 0.3042 & 0.0190 & \textbf{-0.2852} & \textbf{-93.8} \\
+Rare & 0.0464 & 0.1842 & \textbf{+0.1378} & \textbf{+297.2} & 0.7482 & 0.0186 & \textbf{-0.7296} & \textbf{-97.5} & 0.3894 & 0.0475 & \textbf{-0.3419} & \textbf{-87.8} \\
+
+
+--- Seed 123 ---
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.0262 & 0.0160 & \textbf{-0.0101} & \textbf{-38.8} & 1.0808 & 0.0007 & \textbf{-1.0802} & \textbf{-99.9} & 0.2993 & 0.0298 & \textbf{-0.2694} & \textbf{-90.0} \\
+Rare & 0.7775 & 0.1605 & \textbf{-0.6170} & \textbf{-79.4} & 0.6447 & 0.0330 & \textbf{-0.6117} & \textbf{-94.9} & 0.3267 & 0.0650 & \textbf{-0.2618} & \textbf{-80.1} \\
+
+
+--- Seed 9999 ---
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.2695 & 0.0130 & \textbf{-0.2565} & \textbf{-95.2} & 1.1408 & 0.0000 & \textbf{-1.1407} & \textbf{-100.0} & 0.3003 & 0.0253 & \textbf{-0.2749} & \textbf{-91.6} \\
+Rare & 0.1392 & 0.1691 & \textbf{+0.0299} & \textbf{+21.5} & 0.7882 & 0.0296 & \textbf{-0.7586} & \textbf{-96.2} & 0.3978 & 0.0708 & \textbf{-0.3270} & \textbf{-82.2} \\
+
+
+--- Seed 456789 ---
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.0862 & 0.0293 & \textbf{-0.0569} & \textbf{-66.0} & 1.2803 & 0.0008 & \textbf{-1.2795} & \textbf{-99.9} & 0.3084 & 0.0293 & \textbf{-0.2791} & \textbf{-90.5} \\
+Rare & 0.4065 & 0.1431 & \textbf{-0.2633} & \textbf{-64.8} & 0.8857 & 0.0167 & \textbf{-0.8691} & \textbf{-98.1} & 0.3701 & 0.0566 & \textbf{-0.3135} & \textbf{-84.7} \\
+
+
+
+================================================================================
+LATEX TABLE - AVERAGED ACROSS SEEDS (USE THIS FOR YOUR PAPER!)
+================================================================================
+
+================================================================================
+LATEX TABLE
+================================================================================
+
+All  & 0.1445 & 0.0241 & \textbf{-0.1204} & \textbf{-83.3} & 1.1987 & 0.0004 & \textbf{-1.1982} & \textbf{-100.0} & 0.3041 & 0.0255 & \textbf{-0.2787} & \textbf{-91.6} \\
+Rare & 0.3662 & 0.1494 & \textbf{-0.2168} & \textbf{-59.2} & 0.7928 & 0.0277 & \textbf{-0.7651} & \textbf{-96.5} & 0.3705 & 0.0620 & \textbf{-0.3085} & \textbf{-83.3} \\
+
+
+
+================================================================================
+STEP 5: SAVING RESULTS TO CSV FILES
+================================================================================
+  Creating detailed CSV...
+  ✓ Detailed CSV saved: logs/mse_decomposition_detailed_20251104_173014.csv
+    (24 rows: 5 seeds × 2 subsets × 2 models)
+  Creating summary CSV (averaged results with Δ and %Δ)...
+  ✓ Summary CSV saved: logs/mse_decomposition_summary_20251104_173014.csv
+    (2 rows: All and Rare subsets)
+
+================================================================================
+ANALYSIS COMPLETE!
+================================================================================
+  Seeds processed: 5
+  Test samples: 11839
+  Rare samples: 112
+
+Output files:
+  1. logs/mse_decomposition_detailed_20251104_173014.csv
+  2. logs/mse_decomposition_summary_20251104_173014.csv
+
+Use the LaTeX table printed above for your paper!
+paperspace@psq5joy8a60j:~/sep-forecasting-research$ 
