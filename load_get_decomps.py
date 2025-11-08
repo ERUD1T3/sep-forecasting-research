@@ -13,6 +13,11 @@ The three terms represent:
     2. SD mismatch: (sd(ŷ) - sd(y))² - error due to over/under-dispersed predictions
     3. Correlation deficit: 2·sd(ŷ)·sd(y)·(1 - PCC(ŷ,y)) - error due to poor correlation
 
+Additionally, the script reports (1 - PCC) separately to directly show the correlation
+degradation, which is particularly important because wPCC regularization directly
+affects PCC. This is relevant in the context of Table IV (AORC), which aggregates
+two correlation metrics.
+
 Models Compared:
     - CISIR w/o wPCC: Trained with only MSE loss (λ_pcc = 0)
     - CISIR: Trained with MSE + wPCC regularizer (λ_pcc > 0)
@@ -26,7 +31,7 @@ Seeds:
     and results are averaged to provide robust estimates.
 
 Outputs:
-    1. LaTeX table rows for direct copy-paste into paper
+    1. LaTeX table rows for direct copy-paste into paper (with 1-PCC column)
     2. Detailed CSV: All seeds, subsets, and models
     3. Summary CSV: Averaged results with Δ and %Δ
 
@@ -54,7 +59,7 @@ from modules.shared.globals import *
 from modules.training.ts_modeling import build_dataset, create_mlp
 
 
-def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[float, float, float]:
+def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[float, float, float, float]:
     """
     Compute the three MSE decomposition terms from Murphy (1988).
     
@@ -65,10 +70,11 @@ def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[f
         y_pred: Predicted values (shape: [n_samples, 1] or [n_samples,])
     
     Returns:
-        tuple: (mean_term, sd_term, corr_term)
+        tuple: (mean_term, sd_term, corr_term, one_minus_pcc)
             - mean_term: (ȳ - ȳ_hat)² - mismatch in means
             - sd_term: (sd(ŷ) - sd(y))² - mismatch in standard deviations
             - corr_term: 2·sd(ŷ)·sd(y)·(1 - PCC(ŷ,y)) - correlation deficit term
+            - one_minus_pcc: 1 - PCC(ŷ,y) - correlation degradation
     """
     print(f"    Computing MSE decomposition for {len(y_true)} samples...")
     
@@ -84,9 +90,9 @@ def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[f
     mean_y_pred = np.mean(y_pred)
     print(f"    Mean(y_true)={mean_y:.6f}, Mean(y_pred)={mean_y_pred:.6f}")
     
-    # Compute standard deviations (using sample std with ddof=1)
-    sd_y = np.std(y_true, ddof=1)
-    sd_y_pred = np.std(y_pred, ddof=1)
+    # Compute standard deviations (using population std with ddof=0 for MSE decomposition)
+    sd_y = np.std(y_true, ddof=0)
+    sd_y_pred = np.std(y_pred, ddof=0)
     print(f"    SD(y_true)={sd_y:.6f}, SD(y_pred)={sd_y_pred:.6f}")
     
     # Compute Pearson correlation coefficient
@@ -96,11 +102,13 @@ def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[f
     # Compute the three decomposition terms
     mean_term = (mean_y - mean_y_pred) ** 2
     sd_term = (sd_y_pred - sd_y) ** 2
-    corr_term = 2 * sd_y_pred * sd_y * (1 - pcc)
+    one_minus_pcc = 1 - pcc
+    corr_term = 2 * sd_y_pred * sd_y * one_minus_pcc
     
     print(f"    Term 1 (mean mismatch): {mean_term:.6f}")
     print(f"    Term 2 (SD mismatch): {sd_term:.6f}")
     print(f"    Term 3 (corr deficit): {corr_term:.6f}")
+    print(f"    1 - PCC (corr degradation): {one_minus_pcc:.6f}")
     
     # Verify the decomposition by comparing with direct MSE calculation
     mse_direct = np.mean((y_true - y_pred) ** 2)
@@ -115,7 +123,7 @@ def compute_mse_decomposition(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[f
     if decomp_error > 1e-6:
         print(f"    WARNING: Large decomposition error detected!")
     
-    return mean_term, sd_term, corr_term
+    return mean_term, sd_term, corr_term, one_minus_pcc
 
 
 def load_model_and_predict(model_path: str, X_test: np.ndarray) -> np.ndarray:
@@ -209,12 +217,12 @@ def compute_table_values(
         dict: Dictionary with structure:
             {
                 'all': {
-                    'without_wpcc': {'mean': float, 'sd': float, 'corr': float},
-                    'with_wpcc': {'mean': float, 'sd': float, 'corr': float}
+                    'without_wpcc': {'mean': float, 'sd': float, 'corr': float, 'one_minus_pcc': float},
+                    'with_wpcc': {'mean': float, 'sd': float, 'corr': float, 'one_minus_pcc': float}
                 },
                 'rare': {
-                    'without_wpcc': {'mean': float, 'sd': float, 'corr': float},
-                    'with_wpcc': {'mean': float, 'sd': float, 'corr': float}
+                    'without_wpcc': {'mean': float, 'sd': float, 'corr': float, 'one_minus_pcc': float},
+                    'with_wpcc': {'mean': float, 'sd': float, 'corr': float, 'one_minus_pcc': float}
                 }
             }
     """
@@ -258,16 +266,16 @@ def compute_table_values(
     print("-"*80)
     
     print("\n  Model: CISIR w/o wPCC")
-    mean_wo_all, sd_wo_all, corr_wo_all = compute_mse_decomposition(
+    mean_wo_all, sd_wo_all, corr_wo_all, one_minus_pcc_wo_all = compute_mse_decomposition(
         y_test, y_pred_without)
     
     print("\n  Model: CISIR (with wPCC)")
-    mean_w_all, sd_w_all, corr_w_all = compute_mse_decomposition(
+    mean_w_all, sd_w_all, corr_w_all, one_minus_pcc_w_all = compute_mse_decomposition(
         y_test, y_pred_with)
     
     results['all'] = {
-        'without_wpcc': {'mean': mean_wo_all, 'sd': sd_wo_all, 'corr': corr_wo_all},
-        'with_wpcc': {'mean': mean_w_all, 'sd': sd_w_all, 'corr': corr_w_all}
+        'without_wpcc': {'mean': mean_wo_all, 'sd': sd_wo_all, 'corr': corr_wo_all, 'one_minus_pcc': one_minus_pcc_wo_all},
+        'with_wpcc': {'mean': mean_w_all, 'sd': sd_w_all, 'corr': corr_w_all, 'one_minus_pcc': one_minus_pcc_w_all}
     }
     
     # Compute decomposition for "Rare" subset (high delta_p events)
@@ -282,16 +290,16 @@ def compute_table_values(
         y_pred_with_rare = y_pred_with[rare_mask]
         
         print("\n  Model: CISIR w/o wPCC")
-        mean_wo_rare, sd_wo_rare, corr_wo_rare = compute_mse_decomposition(
+        mean_wo_rare, sd_wo_rare, corr_wo_rare, one_minus_pcc_wo_rare = compute_mse_decomposition(
             y_test_rare, y_pred_without_rare)
         
         print("\n  Model: CISIR (with wPCC)")
-        mean_w_rare, sd_w_rare, corr_w_rare = compute_mse_decomposition(
+        mean_w_rare, sd_w_rare, corr_w_rare, one_minus_pcc_w_rare = compute_mse_decomposition(
             y_test_rare, y_pred_with_rare)
         
         results['rare'] = {
-            'without_wpcc': {'mean': mean_wo_rare, 'sd': sd_wo_rare, 'corr': corr_wo_rare},
-            'with_wpcc': {'mean': mean_w_rare, 'sd': sd_w_rare, 'corr': corr_w_rare}
+            'without_wpcc': {'mean': mean_wo_rare, 'sd': sd_wo_rare, 'corr': corr_wo_rare, 'one_minus_pcc': one_minus_pcc_wo_rare},
+            'with_wpcc': {'mean': mean_w_rare, 'sd': sd_w_rare, 'corr': corr_w_rare, 'one_minus_pcc': one_minus_pcc_w_rare}
         }
     else:
         print("  ⚠ WARNING: No rare samples found in test set!")
@@ -309,8 +317,8 @@ def format_table_row(subset: str, without_wpcc: dict, with_wpcc: dict) -> str:
     
     Args:
         subset: Name of the subset ('All' or 'Rare')
-        without_wpcc: Dict with keys 'mean', 'sd', 'corr' for model without wPCC
-        with_wpcc: Dict with keys 'mean', 'sd', 'corr' for model with wPCC
+        without_wpcc: Dict with keys 'mean', 'sd', 'corr', 'one_minus_pcc' for model without wPCC
+        with_wpcc: Dict with keys 'mean', 'sd', 'corr', 'one_minus_pcc' for model with wPCC
     
     Returns:
         str: Formatted LaTeX table row string with ampersands and line break
@@ -319,24 +327,29 @@ def format_table_row(subset: str, without_wpcc: dict, with_wpcc: dict) -> str:
     mean_delta = with_wpcc['mean'] - without_wpcc['mean']
     sd_delta = with_wpcc['sd'] - without_wpcc['sd']
     corr_delta = with_wpcc['corr'] - without_wpcc['corr']
+    one_minus_pcc_delta = with_wpcc['one_minus_pcc'] - without_wpcc['one_minus_pcc']
     
     # Compute percent changes (%Δ = Δ / without_wpcc * 100)
     mean_pct = (mean_delta / without_wpcc['mean'] * 100) if without_wpcc['mean'] != 0 else 0
     sd_pct = (sd_delta / without_wpcc['sd'] * 100) if without_wpcc['sd'] != 0 else 0
     corr_pct = (corr_delta / without_wpcc['corr'] * 100) if without_wpcc['corr'] != 0 else 0
+    one_minus_pcc_pct = (one_minus_pcc_delta / without_wpcc['one_minus_pcc'] * 100) if without_wpcc['one_minus_pcc'] != 0 else 0
     
-    # Format the LaTeX row (12 columns total)
-    # Column structure: Subset | Term1: wo, w, Δ, %Δ | Term2: wo, w, Δ, %Δ | Term3: wo, w, Δ, %Δ
+    # Format the LaTeX row with compact notation
+    # Column structure: Subset | Term1: -wPCC, +wPCC, %Δ | Term2: -wPCC, +wPCC, %Δ | Term3: -wPCC, +wPCC, %Δ | 1-PCC: -wPCC, +wPCC, %Δ
     row = f"{subset:4s} & "
-    # Mean term (4 columns)
-    row += f"{without_wpcc['mean']:.4f} & {with_wpcc['mean']:.4f} & "
-    row += f"\\textbf{{{mean_delta:+.4f}}} & \\textbf{{{mean_pct:+.1f}}} & "
-    # SD term (4 columns)
-    row += f"{without_wpcc['sd']:.4f} & {with_wpcc['sd']:.4f} & "
-    row += f"\\textbf{{{sd_delta:+.4f}}} & \\textbf{{{sd_pct:+.1f}}} & "
-    # Corr term (4 columns)
-    row += f"{without_wpcc['corr']:.4f} & {with_wpcc['corr']:.4f} & "
-    row += f"\\textbf{{{corr_delta:+.4f}}} & \\textbf{{{corr_pct:+.1f}}} \\\\"
+    # Mean term (3 columns)
+    row += f"{without_wpcc['mean']:.3f} & {with_wpcc['mean']:.3f} & "
+    row += f"\\textbf{{{mean_pct:+.1f}}} & "
+    # SD term (3 columns)
+    row += f"{without_wpcc['sd']:.3f} & {with_wpcc['sd']:.3f} & "
+    row += f"\\textbf{{{sd_pct:+.1f}}} & "
+    # Corr term (3 columns)
+    row += f"{without_wpcc['corr']:.3f} & {with_wpcc['corr']:.3f} & "
+    row += f"\\textbf{{{corr_pct:+.1f}}} & "
+    # 1-PCC term (3 columns)
+    row += f"{without_wpcc['one_minus_pcc']:.3f} & {with_wpcc['one_minus_pcc']:.3f} & "
+    row += f"\\textbf{{{one_minus_pcc_pct:+.1f}}} \\\\"
     
     return row
 
@@ -441,12 +454,12 @@ def average_results(all_seed_results: list[dict]) -> dict:
     # Initialize averaged results with zeros
     avg_results = {
         'all': {
-            'without_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0},
-            'with_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0}
+            'without_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0, 'one_minus_pcc': 0.0},
+            'with_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0, 'one_minus_pcc': 0.0}
         },
         'rare': {
-            'without_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0},
-            'with_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0}
+            'without_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0, 'one_minus_pcc': 0.0},
+            'with_wpcc': {'mean': 0.0, 'sd': 0.0, 'corr': 0.0, 'one_minus_pcc': 0.0}
         }
     }
     
@@ -457,13 +470,13 @@ def average_results(all_seed_results: list[dict]) -> dict:
         for subset in ['all', 'rare']:
             if subset in result:
                 for model_type in ['without_wpcc', 'with_wpcc']:
-                    for term in ['mean', 'sd', 'corr']:
+                    for term in ['mean', 'sd', 'corr', 'one_minus_pcc']:
                         avg_results[subset][model_type][term] += result[subset][model_type][term]
     
     # Divide by number of seeds to compute mean
     for subset in ['all', 'rare']:
         for model_type in ['without_wpcc', 'with_wpcc']:
-            for term in ['mean', 'sd', 'corr']:
+            for term in ['mean', 'sd', 'corr', 'one_minus_pcc']:
                 avg_results[subset][model_type][term] /= n_seeds
     
     print(f"  ✓ Averaged complete")
@@ -482,10 +495,12 @@ def print_detailed_results(seed, results):
             print(f"\n{subset.upper()} subset:")
             print(f"  Without wPCC: mean={results[subset]['without_wpcc']['mean']:.6f}, "
                   f"sd={results[subset]['without_wpcc']['sd']:.6f}, "
-                  f"corr={results[subset]['without_wpcc']['corr']:.6f}")
+                  f"corr={results[subset]['without_wpcc']['corr']:.6f}, "
+                  f"1-PCC={results[subset]['without_wpcc']['one_minus_pcc']:.6f}")
             print(f"  With wPCC:    mean={results[subset]['with_wpcc']['mean']:.6f}, "
                   f"sd={results[subset]['with_wpcc']['sd']:.6f}, "
-                  f"corr={results[subset]['with_wpcc']['corr']:.6f}")
+                  f"corr={results[subset]['with_wpcc']['corr']:.6f}, "
+                  f"1-PCC={results[subset]['with_wpcc']['one_minus_pcc']:.6f}")
 
 
 def main() -> dict:
@@ -644,6 +659,7 @@ def main() -> dict:
                     'mean_term': results[subset]['without_wpcc']['mean'],
                     'sd_term': results[subset]['without_wpcc']['sd'],
                     'corr_term': results[subset]['without_wpcc']['corr'],
+                    'one_minus_pcc': results[subset]['without_wpcc']['one_minus_pcc'],
                     'total_mse': (results[subset]['without_wpcc']['mean'] + 
                                  results[subset]['without_wpcc']['sd'] + 
                                  results[subset]['without_wpcc']['corr'])
@@ -655,6 +671,7 @@ def main() -> dict:
                     'mean_term': results[subset]['with_wpcc']['mean'],
                     'sd_term': results[subset]['with_wpcc']['sd'],
                     'corr_term': results[subset]['with_wpcc']['corr'],
+                    'one_minus_pcc': results[subset]['with_wpcc']['one_minus_pcc'],
                     'total_mse': (results[subset]['with_wpcc']['mean'] + 
                                  results[subset]['with_wpcc']['sd'] + 
                                  results[subset]['with_wpcc']['corr'])
@@ -670,6 +687,7 @@ def main() -> dict:
                 'mean_term': avg_results[subset]['without_wpcc']['mean'],
                 'sd_term': avg_results[subset]['without_wpcc']['sd'],
                 'corr_term': avg_results[subset]['without_wpcc']['corr'],
+                'one_minus_pcc': avg_results[subset]['without_wpcc']['one_minus_pcc'],
                 'total_mse': (avg_results[subset]['without_wpcc']['mean'] + 
                              avg_results[subset]['without_wpcc']['sd'] + 
                              avg_results[subset]['without_wpcc']['corr'])
@@ -681,6 +699,7 @@ def main() -> dict:
                 'mean_term': avg_results[subset]['with_wpcc']['mean'],
                 'sd_term': avg_results[subset]['with_wpcc']['sd'],
                 'corr_term': avg_results[subset]['with_wpcc']['corr'],
+                'one_minus_pcc': avg_results[subset]['with_wpcc']['one_minus_pcc'],
                 'total_mse': (avg_results[subset]['with_wpcc']['mean'] + 
                              avg_results[subset]['with_wpcc']['sd'] + 
                              avg_results[subset]['with_wpcc']['corr'])
@@ -717,6 +736,11 @@ def main() -> dict:
                 'corr_w_wpcc': wi['corr'],
                 'corr_delta': wi['corr'] - wo['corr'],
                 'corr_pct_delta': ((wi['corr'] - wo['corr']) / wo['corr'] * 100) if wo['corr'] != 0 else 0,
+                # 1-PCC term
+                'one_minus_pcc_wo_wpcc': wo['one_minus_pcc'],
+                'one_minus_pcc_w_wpcc': wi['one_minus_pcc'],
+                'one_minus_pcc_delta': wi['one_minus_pcc'] - wo['one_minus_pcc'],
+                'one_minus_pcc_pct_delta': ((wi['one_minus_pcc'] - wo['one_minus_pcc']) / wo['one_minus_pcc'] * 100) if wo['one_minus_pcc'] != 0 else 0,
             })
     
     summary_df = pd.DataFrame(summary_rows)
