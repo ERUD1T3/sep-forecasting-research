@@ -2004,6 +2004,89 @@ class ModelBuilder:
 
 
     @tf.autograph.experimental.do_not_convert
+    def pdc_loss_vec_cos(
+        self,
+        y_true: tf.Tensor,
+        z_pred: tf.Tensor,
+        phase_manager: TrainingPhaseManager,
+        train_sample_weights: Optional[Dict[float, float]] = None,
+        val_sample_weights: Optional[Dict[float, float]] = None,
+        reduction: tf.keras.losses.Reduction = tf.keras.losses.Reduction.NONE
+    ) -> tf.Tensor:
+        """
+        Computes the PDC (Pairwise Distance Correlation) loss with diagonal terms excluded,
+        using absolute differences for labels and cosine distance (1 - dot product) for unit norm representations.
+        
+        Args:
+            y_true: A batch of true label values, shape of [batch_size, 1]
+            z_pred: A batch of predicted feature vectors (assumed unit norm), shape of [batch_size, n_features]
+            phase_manager: Manager that tracks training/validation phase
+            train_sample_weights: Dictionary mapping label values to weights during training
+            val_sample_weights: Dictionary mapping label values to weights during validation
+            reduction: Type of reduction to apply (Note: loss is scalar, reduction has no effect)
+        
+        Returns:
+            The PDC loss value using cosine distance as a scalar tensor
+        """
+        # Cast tensors to float32 for stability
+        batch_size = tf.shape(y_true)[0]
+        dtype = tf.float32
+        y_true = tf.cast(y_true, dtype)
+        z_pred = tf.cast(z_pred, dtype)
+        epsilon = tf.keras.backend.epsilon()
+        
+        # Compute distance matrices
+        # For labels: absolute difference (same as original)
+        y_diff = tf.abs(y_true - tf.transpose(y_true))
+        
+        # For representations: cosine distance (1 - dot product) for unit norm vectors
+        # Compute pairwise dot products: z_pred[i] · z_pred[j]
+        dot_products = tf.matmul(z_pred, tf.transpose(z_pred))
+        
+        # Cosine distance = 1 - dot_product (for unit norm vectors)
+        # Clamp dot products to [-1, 1] to handle numerical errors
+        dot_products = tf.clip_by_value(dot_products, -1.0, 1.0)
+        z_diff = 1.0 - dot_products
+        
+        # Ensure z_diff is non-negative (cosine distance should be in [0, 2])
+        z_diff = tf.maximum(z_diff, 0.0)
+        
+        y_diff = tf.cast(y_diff, dtype)
+        
+        off_diag_size = tf.cast(batch_size * (batch_size - 1), dtype)
+        
+        # Compute means excluding diagonal terms
+        Dy_mean = tf.reduce_sum(y_diff) / off_diag_size
+        Dz_mean = tf.reduce_sum(z_diff) / off_diag_size
+        
+        # Center the variables
+        Dy_centered = y_diff - Dy_mean
+        Dz_centered = z_diff - Dz_mean
+        
+        # Create weights matrix
+        weights_matrix = tf.ones((batch_size, batch_size), dtype=dtype)
+        
+        # Apply sample weights if provided
+        sample_weights = train_sample_weights if phase_manager.is_training_phase() else val_sample_weights
+        if sample_weights is not None:
+            weights = tf.squeeze(create_weight_tensor_fast(y_true, sample_weights), axis=-1)
+            weights_matrix = tf.cast(weights[:, None] * weights[None, :], dtype)
+        
+        # Reshape diagonal zeros to match weights_matrix shape
+        diag_zeros = tf.zeros([batch_size], dtype=dtype)
+        weights_matrix = tf.linalg.set_diag(weights_matrix, diag_zeros)
+        
+        # Compute moments
+        cov_Dy_Dz = tf.reduce_sum(weights_matrix * Dy_centered * Dz_centered)
+        var_Dy = tf.reduce_sum(weights_matrix * tf.square(Dy_centered))
+        var_Dz = tf.reduce_sum(weights_matrix * tf.square(Dz_centered))
+        
+        # Compute correlation
+        pcc = cov_Dy_Dz / tf.sqrt((var_Dy * var_Dz) + epsilon)
+        
+        return 1.0 - pcc
+
+    @tf.autograph.experimental.do_not_convert
     def pdc_loss_vec_geo(
             self,
             y_true: tf.Tensor,
@@ -2297,6 +2380,88 @@ class ModelBuilder:
         y_diff = tf.cast(y_diff, dtype)  # Ensure y_diff is in the same dtype as z_diff
 
         # Compute the pairwise loss
+        pairwise_loss = tf.square(z_diff - y_diff)
+
+        # Create weights matrix
+        weights_matrix = tf.ones((batch_size, batch_size), dtype=dtype)
+
+        # Apply sample weights if provided
+        sample_weights = train_sample_weights if phase_manager.is_training_phase() else val_sample_weights
+        if sample_weights is not None:
+            weights = create_weight_tensor_fast(y_true, sample_weights)
+            # Ensure weights is 1D by squeezing any extra dimensions
+            weights = tf.squeeze(weights)
+            weights_matrix = tf.cast(weights[:, None] * weights[None, :], dtype)
+
+        # Reshape diagonal zeros to match weights_matrix shape
+        diag_zeros = tf.zeros([batch_size], dtype=dtype)
+        weights_matrix = tf.linalg.set_diag(weights_matrix, diag_zeros)
+
+        # Apply the weights to the pairwise loss
+        pairwise_loss *= weights_matrix
+
+        # Calculate total weighted error
+        total_error = tf.reduce_sum(pairwise_loss)
+
+        # Apply reduction
+        if reduction == tf.keras.losses.Reduction.SUM:
+            return total_error * 0.5  # Account for symmetry in pairs
+        elif reduction == tf.keras.losses.Reduction.NONE:
+            return total_error / num_comparisons
+        else:
+            raise ValueError(f"Unsupported reduction type: {reduction}.")
+
+    def pds_loss_vec_cos(
+        self,
+        y_true: tf.Tensor,
+        z_pred: tf.Tensor,
+        phase_manager: TrainingPhaseManager,
+        train_sample_weights: Optional[Dict[float, float]] = None,
+        val_sample_weights: Optional[Dict[float, float]] = None,
+        reduction: tf.keras.losses.Reduction = tf.keras.losses.Reduction.NONE
+    ) -> tf.Tensor:
+        """
+        Computes the weighted loss for a batch of predicted features and their labels,
+        using absolute differences for labels and cosine distance (1 - dot product) for unit norm representations.
+
+        Args:
+            y_true: A batch of true label values, shape of [batch_size, 1].
+            z_pred: A batch of predicted Z values (assumed unit norm), shape of [batch_size, n_features].
+            phase_manager: Manager that tracks training/validation phase.
+            train_sample_weights: Dictionary mapping label values to weights during training.
+            val_sample_weights: Dictionary mapping label values to weights during validation.
+            reduction: Type of reduction to apply to the loss.
+
+        Returns:
+            The weighted average error for all unique combinations of the samples in the batch.
+        """
+        batch_size = tf.shape(y_true)[0]
+        dtype = tf.float32  # Use high precision for stability
+        y_true = tf.cast(y_true, dtype)
+        z_pred = tf.cast(z_pred, dtype)
+        epsilon = tf.keras.backend.epsilon()
+
+        # Compute pairwise differences using broadcasting
+        # For labels: absolute difference (same as original)
+        y_diff = tf.abs(y_true - tf.transpose(y_true))
+        
+        # For representations: cosine distance (1 - dot product) for unit norm vectors
+        # Compute pairwise dot products: z_pred[i] · z_pred[j]
+        dot_products = tf.matmul(z_pred, tf.transpose(z_pred))
+        
+        # Cosine distance = 1 - dot_product (for unit norm vectors)
+        # Clamp dot products to [-1, 1] to handle numerical errors
+        dot_products = tf.clip_by_value(dot_products, -1.0, 1.0)
+        z_diff = 1.0 - dot_products
+        
+        # Ensure z_diff is non-negative (cosine distance should be in [0, 2])
+        z_diff = tf.maximum(z_diff, 0.0)
+
+        # Exclude diagonal elements
+        num_comparisons = tf.cast(batch_size * (batch_size - 1), dtype)
+        y_diff = tf.cast(y_diff, dtype)  # Ensure y_diff is in the same dtype as z_diff
+
+        # Compute the pairwise loss (squared difference between distance matrices)
         pairwise_loss = tf.square(z_diff - y_diff)
 
         # Create weights matrix
