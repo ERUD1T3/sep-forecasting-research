@@ -37,8 +37,11 @@ def seg(ax, d, flag, color, lw=2.0, z=2):
     lo = max(lo - 1, 0) if flag != 0 else lo
     hi = min(hi + 1, len(d) - 1) if flag != 0 else hi
     s = d.iloc[lo:hi + 1]
-    ax.plot(s['t'], np.maximum(s['pi'], 1e-4), color=color, lw=lw, zorder=z,
-            solid_capstyle='round')
+    # zeros are non-detections, not small values: leave them as gaps rather than
+    # clamping to a floor (which would both invent a value and lift genuine
+    # sub-floor readings upward)
+    y = s['pi'].where(s['pi'] > 0)
+    ax.plot(s['t'], y, color=color, lw=lw, zorder=z, solid_capstyle='round')
 
 
 def style(ax):
@@ -154,8 +157,8 @@ def main():
                    fontsize=10, bbox_to_anchor=(0.5, 0.955), labelcolor=INK)
         fig.suptitle(f'SEP-EC untrimmed + extended — events {page[0]}-{page[-1]}',
                      fontsize=14, color=INK, y=0.99)
-        fig.text(0.5, 0.968, 'Proton Intensity (16.4 MeV channel), log scale  ·  '
-                 'shaded band = span of the distributed dataset',
+        fig.text(0.5, 0.968, 'Proton Intensity — EPHIN 16.40 MeV proton channel, 1/(cm^2 s sr MeV), log scale  ·  '
+                 'shaded band = span of the distributed dataset  ·  gaps = zero flux',
                  ha='center', fontsize=9, color=INK2)
         fig.tight_layout(rect=[0, 0, 1, 0.925])
         pp = os.path.join(OUTDIR, f'events_{page[0]:02d}-{page[-1]:02d}.png')
