@@ -199,6 +199,39 @@ data: `hours_before = 12` (the notebook says 16; five events pin the start to
 onset − 12.00 h) and channel prefixes `p6.1` / `p33.0` (the notebook emits
 `e6.10` / `e33.00`).
 
+## Figures
+
+`figures/` holds two sets of the same data:
+
+| Files | Space |
+| --- | --- |
+| `events_NN-MM.png` | `log10` flux axis — physical view, all 44 events, 3×3 per page |
+| `events_NN-MM_log1p.png` | `ln(1 + I)` linear axis — what the model is fed |
+| `space_comparison_log10_vs_log1p.png` | events 1 and 35 in both spaces, stacked |
+| `overview_sample_12_events.png`, `detail_events_01_and_35.png` | representative samples |
+
+**The two views disagree about how much the restored background is worth**, and that is
+a real finding rather than a plotting choice. `ln(1+I) ≈ I` for `I << 1`, so the
+transform is effectively linear exactly where the quiet background lives:
+
+| Region | Share of the `ln(1+I)` range | Span in `log10` |
+| --- | --- | --- |
+| `I < 0.001` | 0.017% | — |
+| `I < 0.01` | 0.169% | — |
+| `I < 0.1` | 1.6% | — |
+| `I < 1` | 11.8% | 5.5 decades |
+
+So event 1's 12 hours of restored background — rich, ~1-decade structure on a log10
+axis — is a **dead-flat line at zero** in the network's space. Across the dataset, 23
+of the 39 events with restored background have that background occupying under 1% of
+the event's `ln(1+I)` range (median 0.46%).
+
+Practical implication: if the goal is for a model to *learn* from pre-onset background,
+`log1p` is the wrong transform for this dynamic range — it discards the multiplicative
+structure that makes the quiet-time series informative. A true `ln(I)` or `log10(I)`
+with a floor preserves it. `log1p` only earns its keep as a convenience for handling
+the exact zeros (32,056 of them).
+
 ## Note on the log transform
 
 The stored features are raw (pre-log) and `delta_log_Intensity` is
