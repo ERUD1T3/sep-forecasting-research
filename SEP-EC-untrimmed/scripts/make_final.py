@@ -31,13 +31,38 @@ def fmt(ts):
     return f"{ts.month}/{ts.day}/{ts.year} {ts.hour}:{ts.minute:02d}"
 
 
-def usable_post(post):
-    """Longest prefix whose cumulative raw-backed fraction stays >= MIN_BACKED."""
+REBOUND_MAX = 3.0   # stop if intensity climbs this far back above its running minimum
+
+
+def usable_post(post, next_onset=None):
+    """
+    Trim the post-event window to the part that is genuinely post-event decay.
+
+    Three cuts, applied in order:
+      1. next catalog SEP onset - never extend into the following event
+      2. rebound guard - stop where intensity climbs REBOUND_MAX above its running
+         minimum (catches an event the catalog missed / a shock arrival)
+      3. raw-coverage - keep only while cumulative real-data fraction >= MIN_BACKED
+    """
     if not len(post):
         return post.iloc[:0]
+
+    if next_onset is not None:
+        post = post[post['Target Timestamp'] < next_onset]
+        if not len(post):
+            return post.iloc[:0]
+
+    pi = pd.to_numeric(post['Proton Intensity']).values
+    runmin = np.minimum.accumulate(np.maximum(pi, 1e-12))
+    over = pi / runmin
+    hit = np.where(over > REBOUND_MAX)[0]
+    if len(hit):
+        post = post.iloc[:hit[0]]
+        if not len(post):
+            return post.iloc[:0]
+
     b = post['flux_raw_backed'].values.astype(int)
-    cum = np.cumsum(b)
-    frac = cum / np.arange(1, len(b) + 1)
+    frac = np.cumsum(b) / np.arange(1, len(b) + 1)
     good = np.where(frac >= MIN_BACKED)[0]
     if not len(good):
         return post.iloc[:0]
@@ -56,6 +81,10 @@ def main():
         t = pd.read_csv(f, dtype=str, keep_default_na=False)
         ship_txt[ev] = t
         ship_key[ev] = pd.to_datetime(t['Target Timestamp'])
+
+    cat = pd.read_csv(os.path.join(ROOT, 'curr_pf10th10_original.csv'))
+    cat['datetime'] = pd.to_datetime(cat['datetime'])
+    onsets = np.sort(cat[cat['Index'] == 1]['datetime'].values)
 
     ext = {}
     for f in glob.glob(os.path.join(EXT, '*_ext.csv')):
@@ -84,7 +113,9 @@ def main():
         assert set(ship_key[ev]) <= set(r['Target Timestamp']), f"coverage gap ev{ev}"
 
         pre = r[r['Target Timestamp'] < first]
-        post = usable_post(r[r['Target Timestamp'] > last])
+        nxt = onsets[onsets > np.datetime64(last)]
+        next_onset = pd.Timestamp(nxt[0]) if len(nxt) else None
+        post = usable_post(r[r['Target Timestamp'] > last], next_onset)
 
         def block(src, flag):
             h = pd.DataFrame(index=range(len(src)))
@@ -122,6 +153,7 @@ def main():
             hours_after_peak=round((k.iloc[-1] - k.iloc[imax]).total_seconds() / 3600, 1),
             decades_decay=round(float(np.log10(max(pi.max(), 1e-12))
                                       - np.log10(max(pi.iloc[-1], 1e-12))), 2),
+            next_onset=next_onset,
             era=('2012-blackout' if first.year == 2012 else 'raw-v1')))
 
     for rv in sorted(set(ext) - used):

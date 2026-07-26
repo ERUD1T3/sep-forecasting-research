@@ -26,8 +26,8 @@ events already contain a substantial fall. What was missing is the *tail* of it.
 | `extra_catalog_events/` | 2 catalog events SEP-EC dropped (near-duplicates) |
 | `manifest.csv` / `MANIFEST.md` | Per-event rows, restored hours, decay stats, provenance |
 
-**42,039 rows** = 28,559 original + 4,562 restored before + 8,918 restored after
-(**1,123.3 hours** restored: 380.2 h before across 39 events, 743.2 h after across 32).
+**40,855 rows** = 28,559 original + 4,562 restored before + 7,734 restored after
+(**1,024.7 hours** restored: 380.2 h before across 39 events, 644.5 h after across 31).
 
 ## Schema
 
@@ -46,9 +46,9 @@ interleaving, verified on all 44.
 
 | | Distributed SEP-EC | This dataset |
 | --- | --- | --- |
-| Median decay captured after peak | 0.79 decades / 19.3 h | **1.54 decades / 35.5 h** |
-| Events with ≥1 decade of decay | 17 / 44 | **31 / 44** |
-| Events with ≥2 decades | — | 13 / 44 |
+| Median decay captured after peak | 0.79 decades / 19.3 h | **1.48 decades / 34.3 h** |
+| Events with ≥1 decade of decay | 17 / 44 | **30 / 44** |
+| Events with ≥2 decades | — | 12 / 44 |
 | Events that look rise-only (peak in last 10%) | 4 / 44 | **2 / 44** (19, 30) |
 
 ## Guarantees, and how they were checked
@@ -79,17 +79,34 @@ lag columns (worst at `tminus24`, decaying to `tminus23`); no `_t` column and no
 Regeneration measured against the full distributed dataset: **99.73%** cell agreement,
 25/44 events bit-exact, 100% row coverage.
 
-**Post-event rows are real measurements, not filler.** Rows are emitted only while the
-flux file genuinely had data — included up to the last point where cumulative
-raw-backed coverage stays ≥80%. Median backing is 100% (29 of 32 events fully backed,
-minimum 80.1%); zero `-9999` sentinels; no extrapolated flat tails. `manifest.csv`
-reports `post_raw_backed_pct` per event.
+**Post-event rows are real measurements, not filler.** Three cuts are applied, in order:
+
+1. **Next catalog onset** — the window never extends into the following SEP event.
+   Without this, event 10 ran straight into event 11 (onset 2.7 h after event 10's end)
+   and its "background" rebounded 152× above its running minimum.
+2. **Rebound guard** — stop where intensity climbs >3× above its running minimum,
+   catching a shock arrival or an event the catalog missed.
+3. **Raw coverage** — keep only while cumulative real-data coverage stays ≥80%.
+
+After these, no event rebounds more than 2.99×, median backing is 100% (29 of 31
+events fully backed, minimum 80.1%), there are zero `-9999` sentinels and no
+extrapolated flat tails. `manifest.csv` reports `post_raw_backed_pct` per event.
+
+**How far the decay actually gets.** Median levels across the 31 extended events:
+peak 3.43 → 0.481 at the start of the post window → **0.074 at the end**, against a
+median pre-onset background of 0.0137. So 18/31 events end below 0.1 and 26/31 below
+0.3, but only 13/31 land within 3× of their own pre-event background.
+
+**Call this extended decay, not background recovery.** SEP decay runs for days; 24 h
+gets most events close to quiet levels but not all the way down.
 
 ## Limitations — read before drawing conclusions
 
-- **12 events get no post-event extension**: 7, 11–16, 18–20, 22, 23. Eleven are in the
-  2012 flux blackout (below); event 7's post window is only ~44% covered in the raw
-  file, below the 80% bar.
+- **13 events get no post-event extension**: 7, 11–20, 22, 23. Most are in the 2012
+  flux blackout (below); event 7's post window is only ~44% covered in the raw file,
+  below the 80% bar; events 17 and 30 are cut almost immediately by the next SEP onset.
+- **Three events get only a short extension** because the next event starts soon after:
+  32 (0.6 h), 30 (2.0 h), 10 (2.6 h).
 - **The 2012 restored rows are not independent measurements.** The surviving
   `ephin5m.dat` has a total blackout from Dec 2011 to Jan 2013 (0 valid rows in all of
   2012; adjacent years are 81–96% complete) — that is the one substantive thing the
@@ -102,8 +119,9 @@ reports `post_raw_backed_pct` per event.
 - **Restored rows cannot be validated directly** — no ground truth exists for them.
   The hold-out above covers 5 events; trust elsewhere rests on the same code and the
   same raw flux behaving identically, which is strong but is not direct measurement.
-- **The extension is a fixed 24 h past the catalog end**, not "until background
-  recovery." Slow events are still truncated before full recovery.
+- **The extension is at most 24 h past the catalog end**, not "until background
+  recovery" — and it is cut earlier by the next onset, a rebound, or sparse coverage.
+  Slow events remain elevated at the end of the window.
 
 ## Reproducing
 
