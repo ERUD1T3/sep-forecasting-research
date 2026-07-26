@@ -178,6 +178,8 @@ fit/
 
 # plots
 *.png
+# ...but the SEP-EC-untrimmed comparison figures are documentation, keep them
+!SEP-EC-untrimmed/figures/*.png
 
 #MLFlow stuffs
 logs/mlruns/
