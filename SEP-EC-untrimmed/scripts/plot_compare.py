@@ -102,7 +102,7 @@ def main():
     fig.text(0.5, 0.966, 'Proton Intensity (16.4 MeV channel), log scale  ·  shaded band = span of the distributed dataset',
              ha='center', fontsize=9, color=INK2)
     fig.tight_layout(rect=[0, 0, 1, 0.928])
-    p1 = os.path.join(OUTDIR, 'overview_sample_12_events.png')
+    p1 = os.path.join(OUTDIR, 'log10_overview_sample_12_events.png')
     fig.savefig(p1, dpi=150, facecolor='#fcfcfb')
     plt.close(fig)
 
@@ -136,7 +136,7 @@ def main():
     fig.legend(handles=handles, loc='upper center', ncol=3, frameon=False,
                fontsize=10, bbox_to_anchor=(0.5, 1.0), labelcolor=INK)
     fig.tight_layout(rect=[0, 0, 1, 0.90])
-    p2 = os.path.join(OUTDIR, 'detail_events_01_and_35.png')
+    p2 = os.path.join(OUTDIR, 'log10_detail_events_01_and_35.png')
     fig.savefig(p2, dpi=150, facecolor='#fcfcfb')
     plt.close(fig)
     # ---------- figures 3+: every event, 3x3 pages ----------
@@ -161,7 +161,7 @@ def main():
                  'shaded band = span of the distributed dataset  ·  gaps = zero flux',
                  ha='center', fontsize=9, color=INK2)
         fig.tight_layout(rect=[0, 0, 1, 0.925])
-        pp = os.path.join(OUTDIR, f'events_{page[0]:02d}-{page[-1]:02d}.png')
+        pp = os.path.join(OUTDIR, f'log10_events_{page[0]:02d}-{page[-1]:02d}.png')
         fig.savefig(pp, dpi=140, facecolor='#fcfcfb')
         plt.close(fig)
         print(pp)

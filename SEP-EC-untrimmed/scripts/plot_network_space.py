@@ -136,7 +136,7 @@ def main():
                  'load_file_data(apply_log=True) applies before the model',
                  ha='center', fontsize=9, color=INK2)
         fig.tight_layout(rect=[0, 0, 1, 0.925])
-        pp = os.path.join(OUTDIR, f'events_{page[0]:02d}-{page[-1]:02d}_log1p.png')
+        pp = os.path.join(OUTDIR, f'log1p_events_{page[0]:02d}-{page[-1]:02d}.png')
         fig.savefig(pp, dpi=140, facecolor=SURF)
         plt.close(fig)
         print(pp)

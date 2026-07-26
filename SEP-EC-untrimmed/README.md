@@ -203,12 +203,14 @@ onset − 12.00 h) and channel prefixes `p6.1` / `p33.0` (the notebook emits
 
 `figures/` holds two sets of the same data:
 
+Named so the two spaces group together when sorted:
+
 | Files | Space |
 | --- | --- |
-| `events_NN-MM.png` | `log10` flux axis — physical view, all 44 events, 3×3 per page |
-| `events_NN-MM_log1p.png` | `ln(1 + I)` linear axis — what the model is fed |
+| `log10_events_01-09.png` … `log10_events_37-44.png` | `log10` flux axis — physical view, all 44 events, 3×3 per page |
+| `log10_overview_sample_12_events.png`, `log10_detail_events_01_and_35.png` | representative samples |
+| `log1p_events_01-09.png` … `log1p_events_37-44.png` | `ln(1 + I)` linear axis — what the model is fed |
 | `space_comparison_log10_vs_log1p.png` | events 1 and 35 in both spaces, stacked |
-| `overview_sample_12_events.png`, `detail_events_01_and_35.png` | representative samples |
 
 **The two views disagree about how much the restored background is worth**, and that is
 a real finding rather than a plotting choice. `ln(1+I) ≈ I` for `I << 1`, so the
