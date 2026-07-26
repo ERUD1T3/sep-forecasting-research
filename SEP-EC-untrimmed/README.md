@@ -168,6 +168,33 @@ see `pre_raw_backed_pct` / `post_raw_backed_pct` in the manifest, and note that 
 distributed 2012 events carry their own interpolation (events 14, 17 and 18 contain
 runs of >20 identical consecutive values, up to 61 in event 17).
 
+## Internal consistency
+
+The lag columns encode the same timestamps repeatedly (row *i*'s `{ch}_tminus1` is
+row *i−1*'s `{ch}_t`, and so on out to 24 steps), so the file can be checked against
+itself. Results, and their attribution:
+
+| Check | Distributed SEP-EC | This dataset |
+| --- | --- | --- |
+| `{ch}_tminus1` == previous row's `{ch}_t` (6 channels) | 0 mismatches | **0 — except event 31** |
+| `Proton Intensity[i]` == `p_t[i+6]` | 0 mismatches | 28, all at the splice seam |
+| `delta_log_Intensity` == `log1p(PI) − log1p(p_t)` | 131 mismatches | 131 — the same ones, inherited |
+
+Three things worth knowing:
+
+- **Event 31 accounts for every lag mismatch** (414 of 414, 19.3% of its comparisons).
+  Its pre-onset rows are the 0%-raw-backed constant described above; because
+  `interpolate_and_extrapolate` runs per column, each column extrapolated its own
+  constant, so those columns disagree about the same timestamp. Excluding event 31 the
+  restored rows are **perfectly lag-consistent**.
+- **The 28 `Proton Intensity` / `p_t` mismatches all straddle the seam**, and are a
+  *precision* difference, not an error: SEP-EC stores about three significant figures
+  (`3.77e-05`) while regenerated rows carry full precision (`3.7734e-05`). Relative
+  differences are ~1e-3. Removing them would mean rewriting SEP-EC's own values, which
+  this dataset deliberately never does. Event 31 is the exception at ~8%.
+- **The 131 `delta_log_Intensity` mismatches are SEP-EC's, not ours** — the identical
+  131 appear in the distributed files, and the restored rows have zero.
+
 ## Limitations — read before drawing conclusions
 
 - **13 events get no post-event extension**: 7, 11–20, 22, 23. Most are in the 2012
