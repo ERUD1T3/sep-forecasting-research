@@ -201,3 +201,43 @@ wandb/
 .DS_Store
 sources/.DS_Store
 
+# raw instrument data (EPHIN flux etc.) - never commit, back up separately
+*.dat
+*.l3i
+*.rl2
+*.cdf
+*.nc
+
+# binary / serialized data blobs
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.mat
+*.xlsx
+*.xls
+
+# archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+
+# dataset folders: source, regeneration intermediates, and rebuilt outputs
+full/
+rebuild/
+rebuild_patched*/
+SEP-EC-untrimmed/full/
+SEP-EC-untrimmed/extra_catalog_events/
+
+# local copies of cloud-synced source folders
+SEPForecasting Files/
+SEP_Josias/
+sep-forecasting-nasa/
+
