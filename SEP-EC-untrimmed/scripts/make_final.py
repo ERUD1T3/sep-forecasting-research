@@ -144,6 +144,8 @@ def main():
         rows.append(dict(
             event=ev, rows_total=len(out), rows_shipped=len(s),
             rows_pre=len(pre), rows_post=len(post),
+            pre_raw_backed_pct=(round(100 * float(pre['flux_raw_backed'].mean()), 1)
+                                if len(pre) else None),
             post_raw_backed_pct=(round(100 * float(post['flux_raw_backed'].mean()), 1)
                                  if len(post) else None),
             hours_pre=round(len(pre) * 5 / 60, 2), hours_post=round(len(post) * 5 / 60, 2),
@@ -170,6 +172,10 @@ def main():
     print(f"pre-onset restored : {m.hours_pre.sum():.1f} h across {(m.rows_pre>0).sum()} events")
     print(f"post-event restored: {m.hours_post.sum():.1f} h across {(m.rows_post>0).sum()} events")
     print(f"contiguous 5-min   : {m.contiguous_5min.sum()}/{len(m)}")
+    pb = m.pre_raw_backed_pct.dropna()
+    print(f"pre-row raw backing : median {pb.median():.1f}%, {(pb >= 99.95).sum()}/{len(pb)} at 100%, "
+          f"{(pb < 80).sum()} below 80% -> "
+          f"{sorted(m[m.pre_raw_backed_pct.fillna(100) < 80].event.tolist())}")
     print(f"events with no post extension: {sorted(m[m.rows_post==0].event.tolist())}")
     print(f"\ndecay after peak: median {m.decades_decay.median():.2f} decades over "
           f"{m.hours_after_peak.median():.1f} h")

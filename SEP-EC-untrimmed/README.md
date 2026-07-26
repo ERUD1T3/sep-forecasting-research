@@ -92,6 +92,22 @@ After these, no event rebounds more than 2.99×, median backing is 100% (29 of 3
 events fully backed, minimum 80.1%), there are zero `-9999` sentinels and no
 extrapolated flat tails. `manifest.csv` reports `post_raw_backed_pct` per event.
 
+**Restored-before rows are not held to the same bar.** The pre-onset rows reproduce
+what the *original* pipeline would have built (its `interpolate_and_extrapolate` step
+included), so no coverage filter is applied — dropping rows there would make the file
+less faithful to the untrimmed original, not more. They are 95.3% raw-backed overall
+and 35 of 39 events are at 100%, but three fall short and `manifest.csv` reports
+`pre_raw_backed_pct` per event so they can be filtered:
+
+| Event | Pre rows | Raw-backed |
+| --- | --- | --- |
+| 31 | 70 | **0.0%** — a single constant, extrapolated |
+| 30 | 121 | 37.2% |
+| 43 | 116 | 45.7% |
+
+Event 31's pre-onset segment is one repeated value; treat it as a placeholder, not a
+measurement.
+
 **How far the decay actually gets.** Median levels across the 31 extended events:
 peak 3.43 → 0.481 at the start of the post window → **0.074 at the end**, against a
 median pre-onset background of 0.0137. So 18/31 events end below 0.1 and 26/31 below

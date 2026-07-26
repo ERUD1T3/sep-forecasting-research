@@ -99,7 +99,7 @@ def main():
     fig.text(0.5, 0.966, 'Proton Intensity (16.4 MeV channel), log scale  ·  shaded band = span of the distributed dataset',
              ha='center', fontsize=9, color=INK2)
     fig.tight_layout(rect=[0, 0, 1, 0.928])
-    p1 = os.path.join(OUTDIR, 'overview_12_events.png')
+    p1 = os.path.join(OUTDIR, 'overview_sample_12_events.png')
     fig.savefig(p1, dpi=150, facecolor='#fcfcfb')
     plt.close(fig)
 
@@ -133,9 +133,36 @@ def main():
     fig.legend(handles=handles, loc='upper center', ncol=3, frameon=False,
                fontsize=10, bbox_to_anchor=(0.5, 1.0), labelcolor=INK)
     fig.tight_layout(rect=[0, 0, 1, 0.90])
-    p2 = os.path.join(OUTDIR, 'detail_events_1_and_35.png')
+    p2 = os.path.join(OUTDIR, 'detail_events_01_and_35.png')
     fig.savefig(p2, dpi=150, facecolor='#fcfcfb')
     plt.close(fig)
+    # ---------- figures 3+: every event, 3x3 pages ----------
+    evs_all = sorted(man.event.tolist())
+    pages = [evs_all[i:i + 9] for i in range(0, len(evs_all), 9)]
+    for pi_, page in enumerate(pages, start=1):
+        fig, axes = plt.subplots(3, 3, figsize=(14.5, 12.6), facecolor='#fcfcfb')
+        for ax in axes.ravel():
+            ax.set_facecolor('#fcfcfb')
+            ax.axis('off')
+        for ax, ev in zip(axes.ravel(), page):
+            ax.axis('on')
+            panel(ax, ev, man)
+        for ax in axes[:, 0]:
+            if ax.axison:
+                ax.set_ylabel('Flux (1/(cm^2 s sr MeV))', fontsize=8.5, color=INK2)
+        fig.legend(handles=handles, loc='upper center', ncol=3, frameon=False,
+                   fontsize=10, bbox_to_anchor=(0.5, 0.955), labelcolor=INK)
+        fig.suptitle(f'SEP-EC untrimmed + extended — events {page[0]}-{page[-1]}',
+                     fontsize=14, color=INK, y=0.99)
+        fig.text(0.5, 0.968, 'Proton Intensity (16.4 MeV channel), log scale  ·  '
+                 'shaded band = span of the distributed dataset',
+                 ha='center', fontsize=9, color=INK2)
+        fig.tight_layout(rect=[0, 0, 1, 0.925])
+        pp = os.path.join(OUTDIR, f'events_{page[0]:02d}-{page[-1]:02d}.png')
+        fig.savefig(pp, dpi=140, facecolor='#fcfcfb')
+        plt.close(fig)
+        print(pp)
+
     print(p1)
     print(p2)
 
