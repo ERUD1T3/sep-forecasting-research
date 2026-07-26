@@ -6,7 +6,7 @@ repo's `*.csv` / `.dat` ignore rules); place the inputs at the repo root first.
 ## Inputs
 
 | File | Where to get it |
-|---|---|
+| --- | --- |
 | `ephin5m.dat` | raw EPHIN 5-min flux (the surviving v1; note the 2012 blackout) |
 | `curr_pf10th10_original.csv` | SEP event catalog (onset/peak/end, `Index` 1–4) |
 | `SEP10MeV_Features_v2.csv` | CME features + `daily_sunspots` |
@@ -19,9 +19,16 @@ repo's `*.csv` / `.dat` ignore rules); place the inputs at the repo root first.
 python rebuild_untrimmed.py   # 1. regenerate all 46 catalog events -> rebuild/
 python harvest_mode.py        # 2. invert 2012 flux out of the derived datasets
 python patch_rerun.py         # 3. patch the 2012 blackout, re-run those events
-python make_untrimmed.py      # 4. splice shipped rows + restored background
-python validate.py            # 5. diff the regeneration against SEP-EC
+python validate.py            # 4. diff the regeneration against SEP-EC
+python rebuild_extended.py    # 5. regenerate with the window extended past event end
+python make_final.py          # 6. splice: pre + SEP-EC verbatim + post
 ```
+
+Step 5 (`HOURS_AFTER = 24`) also records a per-row `flux_raw_backed` mask taken
+*before* interpolation. Step 6 uses it to emit post-event rows only while cumulative
+raw coverage stays ≥ `MIN_BACKED` (0.8), so a sparse region cannot produce a long
+interpolated tail. Events failing that bar get no post rows — the 2012 blackout
+events, plus event 7 (~44% covered).
 
 Step 2 writes `harvest2012_mode.pkl`; step 3 reads a pickle of the same structure.
 The variant that produced the shipped result used shipped-priority consolidation —

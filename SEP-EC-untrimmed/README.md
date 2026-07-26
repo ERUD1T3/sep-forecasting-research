@@ -1,75 +1,123 @@
-# SEP-EC (untrimmed)
+# SEP-EC (untrimmed + extended)
 
-The SEP-EC electron/CME dataset with the pre-onset background **restored**.
+The SEP-EC electron/CME dataset with background restored **before** each event and
+the decay extended **after** it.
 
-The distributed SEP-EC files (`misc/full/sep_event_*_filled_ie_trim.csv`) had their
-leading rows removed by `trim_background()` (`modules/training/utils.py`), which
-drops rows from the start of each event until the proton intensity 3 hours ahead
-exceeds 0.1. That discarded up to ~16 h of pre-onset background per event — and on
-4 events it cut past onset into the rising phase. This dataset puts it back.
+## Why this exists
+
+Two separate things shortened the distributed files (`misc/full/sep_event_*_filled_ie_trim.csv`):
+
+1. **`trim_background()`** (`modules/training/utils.py`) dropped rows from the *start*
+   of each event until proton intensity 3 h ahead exceeded 0.1 — discarding up to
+   ~16 h of pre-onset background, and on 4 events cutting past onset into the rise.
+2. **The window generator itself stopped at the catalog end time** (`Index 4` of
+   `curr_pf10th10_original.csv`). Nothing was ever trimmed off the end — the series
+   simply was never built past that point, so the decay is truncated well before
+   background recovery.
+
+Point 2 matters: **`_trim` did not remove the falling phase.** 41 of 44 distributed
+events already contain a substantial fall. What was missing is the *tail* of it.
 
 ## Contents
 
 | Path | What |
 |---|---|
-| `full/sep_event_N_filled_ie.csv` | 44 events, untrimmed. Numbering matches SEP-EC. |
-| `extra_catalog_events/` | 2 catalog events that SEP-EC dropped (near-duplicates) |
-| `manifest.csv` | Per-event row counts, restored hours, provenance |
+| `full/sep_event_N_filled_ie.csv` | 44 events, untrimmed + extended. Numbering matches SEP-EC. |
+| `extra_catalog_events/` | 2 catalog events SEP-EC dropped (near-duplicates) |
+| `manifest.csv` / `MANIFEST.md` | Per-event rows, restored hours, decay stats, provenance |
 
-**33,121 rows** total = 28,559 original + **4,562 restored** (380.2 hours across 39 events).
+**42,039 rows** = 28,559 original + 4,562 restored before + 8,918 restored after
+(**1,123.3 hours** restored: 380.2 h before across 39 events, 743.2 h after across 32).
 
 ## Schema
 
-Identical to SEP-EC's 183 columns, plus one appended column:
+SEP-EC's 183 columns, unchanged, plus one appended column:
 
-- **`is_reconstructed`** — `0` = row came from the distributed SEP-EC file, `1` = restored background.
+| `is_reconstructed` | Meaning |
+|---|---|
+| `0` | Original SEP-EC row, byte-identical |
+| `1` | Restored pre-onset background |
+| `2` | Restored post-event background |
 
-## Guarantee on the original rows
+Every file is ordered `1* 0+ 2*` — restored-before, original, restored-after — with no
+interleaving, verified on all 44.
 
-Every `is_reconstructed=0` row is **byte-identical** to the distributed SEP-EC file —
-verified as raw text across all 28,559 lines in all 44 events, including the native
-`M/D/YYYY H:MM` timestamp format and exact float representations. Nothing that
-already existed was recomputed or re-formatted.
+## What the extension buys
 
-Verified: 44/44 events monotonic in time, 44/44 on a contiguous 5-minute grid,
-39/39 splice seams continuous (5-min spacing, <1 log-unit intensity step),
-zero NaN and zero `-9999` sentinels in restored rows.
+| | Distributed SEP-EC | This dataset |
+| --- | --- | --- |
+| Median decay captured after peak | 0.79 decades / 19.3 h | **1.54 decades / 35.5 h** |
+| Events with ≥1 decade of decay | 17 / 44 | **31 / 44** |
+| Events with ≥2 decades | — | 13 / 44 |
+| Events that look rise-only (peak in last 10%) | 4 / 44 | **2 / 44** (19, 30) |
 
-## How the restored rows were produced
+## Guarantees, and how they were checked
 
-Regenerated with the original pipeline (`notebooks/building_electron_ts_dataset.ipynb`
-+ `modules/training/`), from `curr_pf10th10_original.csv`, `SEP10MeV_Features_v2.csv`,
-`SN_d_tot_V2.0.csv` and the raw EPHIN flux. Two parameters were recovered empirically
-because the committed notebook does not match the shipped data:
+**Original rows are untouched.** Every `is_reconstructed=0` row is byte-identical to
+the distributed file — verified as *raw text*, all 28,559 lines across all 44 events,
+preserving the native `M/D/YYYY H:MM` timestamps and exact float representations.
+Filtering `is_reconstructed == 0` reproduces `misc/full` exactly.
 
-- `hours_before = 12` (the notebook says 16; 5 shipped events pin the start to onset−12 h exactly)
-- channel prefixes `p6.1` / `p33.0` (the notebook emits `e6.10` / `e33.00`)
+Also verified 44/44: every SEP-EC timestamp present, time monotonic, contiguous
+5-minute grid, correct block ordering.
 
-Validation of the regeneration against SEP-EC: **99.73%** cell agreement over all 44
-events, 25/44 bit-exact, with 100% row coverage.
+**Hold-out test on the reconstruction.** Five events were never trimmed, so SEP-EC
+contains ground truth for exactly the kind of deep pre-onset rows that are
+reconstructed elsewhere. Comparing the reconstruction against it (first 150 rows):
 
-### The 2012 caveat
+| Event | Era | Flux agreement | Proton Intensity |
+| --- | --- | --- | --- |
+| 7, 38, 39 | raw flux | **100.0000%** | 100% |
+| 12 | 2012 | **100.0000%** | 100% |
+| 11 | 2012 | 92.51% | **100%** |
 
-The surviving raw flux file `ephin5m.dat` has a **total blackout from Dec 2011 to
-Jan 2013** (0 valid rows in all of 2012; adjacent years are 81–96% complete). The lost
-`ephin5m_v2.dat` had it filled — that was the only substantive v1→v2 difference.
+Non-2012 reconstruction is bit-exact, and **`Proton Intensity` is exact in all five**.
+Event 11's shortfall is confined to 23 contiguous rows at the very start and only to
+lag columns (worst at `tminus24`, decaying to `tminus23`); no `_t` column and no
+`Proton Intensity` value is affected.
 
-For the 14 events in 2012, the flux was recovered by inverting the derived datasets
-back into a time→flux table (each event file stores flux at `Timestamp` plus 24 lags),
-sourced from `misc/full` and archived git snapshots. This lifted 2012 from 0% to
-**99.88%** agreement. `manifest.csv` marks these rows `restored_source=patched-2012`;
-all other restored rows are `raw-v1`, straight from the raw flux file.
+Regeneration measured against the full distributed dataset: **99.73%** cell agreement,
+25/44 events bit-exact, 100% row coverage.
 
-Residual (~0.3%) is confined to the deepest lag columns of the first ~23 rows of 2012
-events, and is a hard ceiling: `interpolate_and_extrapolate` runs per column, so a
-timestamp missing from the raw flux receives a different filled value in each of the
-25 lag columns, and no single patched value can reproduce all of them. Only genuine
-2012 raw flux — the lost `ephin5m_v2.dat` or a fresh EPHIN download — closes it.
+**Post-event rows are real measurements, not filler.** Rows are emitted only while the
+flux file genuinely had data — included up to the last point where cumulative
+raw-backed coverage stays ≥80%. Median backing is 100% (29 of 32 events fully backed,
+minimum 80.1%); zero `-9999` sentinels; no extrapolated flat tails. `manifest.csv`
+reports `post_raw_backed_pct` per event.
 
-## Known limitation
+## Limitations — read before drawing conclusions
 
-This restores background **before** onset. It does **not** extend past each event's
-catalog end time (`Index 4`), so the post-event decay tail is still cut where SEP-EC
-cut it — that data never existed in any version. Extending it is a one-parameter
-change (`end_time` in `build_time_grid`) in `scripts/rebuild_untrimmed.py`, re-run
-against the raw flux.
+- **12 events get no post-event extension**: 7, 11–16, 18–20, 22, 23. Eleven are in the
+  2012 flux blackout (below); event 7's post window is only ~44% covered in the raw
+  file, below the 80% bar.
+- **The 2012 restored rows are not independent measurements.** The surviving
+  `ephin5m.dat` has a total blackout from Dec 2011 to Jan 2013 (0 valid rows in all of
+  2012; adjacent years are 81–96% complete) — that is the one substantive thing the
+  lost `ephin5m_v2.dat` had. For those events the flux was recovered by inverting the
+  derived datasets back into a time→flux table, so those values faithfully continue
+  the dataset but **cannot be cited as evidence of what the instrument recorded**.
+  Rows are marked `era=2012-blackout` in the manifest.
+- **A triangular wedge of deep-lag cells** at the start of 2012 events is interpolated
+  rather than sourced (<1% of the dataset). `Proton Intensity` is unaffected.
+- **Restored rows cannot be validated directly** — no ground truth exists for them.
+  The hold-out above covers 5 events; trust elsewhere rests on the same code and the
+  same raw flux behaving identically, which is strong but is not direct measurement.
+- **The extension is a fixed 24 h past the catalog end**, not "until background
+  recovery." Slow events are still truncated before full recovery.
+
+## Reproducing
+
+See `scripts/`. Data files are not committed. Two pipeline parameters had to be
+recovered empirically because the committed notebook does not reproduce the shipped
+data: `hours_before = 12` (the notebook says 16; five events pin the start to
+onset − 12.00 h) and channel prefixes `p6.1` / `p33.0` (the notebook emits
+`e6.10` / `e33.00`).
+
+## Note on the log transform
+
+The stored features are raw (pre-log) and `delta_log_Intensity` is
+`log1p(Proton Intensity) − log1p(p_t)` (post-log). But the loader closes that gap:
+`load_file_data(apply_log=True)` — the default in `modules/training/ts_modeling.py` —
+applies `np.log1p` to the input columns and to `Proton Intensity` at load time. In
+training, features and target are both in log space; only the on-disk representation
+differs.
