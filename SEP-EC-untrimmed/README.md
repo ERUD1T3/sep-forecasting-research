@@ -116,6 +116,26 @@ median pre-onset background of 0.0137. So 18/31 events end below 0.1 and 26/31 b
 **Call this extended decay, not background recovery.** SEP decay runs for days; 24 h
 gets most events close to quiet levels but not all the way down.
 
+## Missing values
+
+There are **none**. Across 7,394,755 numeric cells: zero NaN, zero `-9999` sentinels
+(the pipeline's "no data available" marker), zero blank fields. The 5-minute grid is
+contiguous with no time gaps in all 44 events.
+
+Two things that look like missing data but are not:
+
+- **Zeros in the flux columns** (32,056 cells, 0.5%) are genuine non-detections — the
+  instrument reading zero, not an absent value. The plots draw them as line gaps
+  rather than clamping them to a floor.
+- **Zeros in the CME/context columns** (58.5% of those cells) mean *no CME is active*
+  for that timestamp; `cme_donki_time` is likewise the literal `0`. That is the
+  original pipeline's default, not a gap.
+
+What *is* worth knowing is that some values are interpolated rather than measured —
+see `pre_raw_backed_pct` / `post_raw_backed_pct` in the manifest, and note that the
+distributed 2012 events carry their own interpolation (events 14, 17 and 18 contain
+runs of >20 identical consecutive values, up to 61 in event 17).
+
 ## Limitations — read before drawing conclusions
 
 - **13 events get no post-event extension**: 7, 11–20, 22, 23. Most are in the 2012

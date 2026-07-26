@@ -122,6 +122,16 @@ def main():
             for c in cols:
                 if c in TSCOLS:
                     h[c] = [fmt(t) for t in src[c]]
+                elif c == 'cme_donki_time':
+                    # match SEP-EC's native M/D/YYYY H:MM; '0' means no CME active
+                    vals = []
+                    for x in src[c]:
+                        sx = str(x).strip()
+                        if sx in ('', '0', '0.0', 'nan', 'NaT'):
+                            vals.append('0')
+                        else:
+                            vals.append(fmt(pd.Timestamp(sx)))
+                    h[c] = vals
                 elif c == 'Event ID':
                     h[c] = s['Event ID'].iloc[0]
                 else:
