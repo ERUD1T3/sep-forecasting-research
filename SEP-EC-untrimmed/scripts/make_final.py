@@ -168,11 +168,28 @@ def main():
             next_onset=next_onset,
             era=('2012-blackout' if first.year == 2012 else 'raw-v1')))
 
+    # the two catalog events SEP-EC dropped: emit them on the SAME schema as the 44
+    # (same columns, same order, same timestamp formatting) so one parser reads all
+    schema = list(next(iter(ship_txt.values())).columns)
     for rv in sorted(set(ext) - used):
-        d = ext[rv].copy()
-        for c in TSCOLS:
-            d[c] = [fmt(t) for t in d[c]]
-        d['is_reconstructed'] = 1
+        src = ext[rv]
+        d = pd.DataFrame(index=range(len(src)))
+        for c in schema:
+            if c in TSCOLS:
+                d[c] = [fmt(t) for t in src[c]]
+            elif c == 'cme_donki_time':
+                vals = []
+                for x in src[c]:
+                    sx = str(x).strip()
+                    vals.append('0' if sx in ('', '0', '0.0', 'nan', 'NaT')
+                                else fmt(pd.Timestamp(sx)))
+                d[c] = vals
+            elif c == 'Event ID':
+                d[c] = rv
+            else:
+                d[c] = src[c].values
+        d = d.astype(str)
+        d['is_reconstructed'] = '1'
         d.to_csv(os.path.join(EXTRA, f'catalog_event_{rv}_filled_ie.csv'), index=False)
 
     m = pd.DataFrame(rows)

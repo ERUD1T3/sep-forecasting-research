@@ -116,6 +116,38 @@ median pre-onset background of 0.0137. So 18/31 events end below 0.1 and 26/31 b
 **Call this extended decay, not background recovery.** SEP decay runs for days; 24 h
 gets most events close to quiet levels but not all the way down.
 
+## Parser notes
+
+`full/` is 44 CSVs, audited so a parser hits nothing unexpected. Verified across all
+files (`scripts/audit_parser.py`, 0 FAIL / 0 WARN):
+
+| Property | Guarantee |
+| --- | --- |
+| Header | one identical 184-column header in every file, same order |
+| Encoding | UTF-8, no BOM, no NUL bytes, pure ASCII |
+| Line endings | LF only, trailing newline present |
+| Quoting | none needed — no field contains a comma or quote |
+| Field count | every row matches the header width |
+| Empty / whitespace | no empty fields, no leading or trailing spaces |
+| Missing markers | no NaN, no `-9999`, no blanks, no infinities |
+| Duplicates | no duplicate rows, no duplicate timestamps |
+| Grid | uniform 5-minute steps, monotonically increasing, no gaps |
+| `Event ID` | constant within a file |
+| `is_reconstructed` | only `0`, `1`, `2`; blocks ordered `1* 0* 2*`, never interleaved |
+
+**Timestamps** are `M/D/YYYY H:MM`, **unpadded** — month, day and hour have no leading
+zero (`6/16/2012 0:09`, not `06/16/2012 00:09`). Parse with `%m/%d/%Y %H:%M`.
+`Target Timestamp` is always exactly `Timestamp + 30 minutes`.
+
+**One column is a union type:** `cme_donki_time` holds either the literal `0`
+(26,416 rows — no CME active) or a timestamp in the same `M/D/YYYY H:MM` format
+(16,468 rows). This comes from the original SEP-EC schema. Every other column is
+purely numeric. The other CME/context columns use `0` for "no CME active" too, so
+`CME_DONKI_speed = 0` means *no CME*, not a CME with zero speed.
+
+The two files in `extra_catalog_events/` are emitted on the identical 184-column
+schema, so one parser reads all 46 files.
+
 ## Missing values
 
 There are **none**. Across 7,394,755 numeric cells: zero NaN, zero `-9999` sentinels
