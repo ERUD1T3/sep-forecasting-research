@@ -59,10 +59,11 @@ def panel(ax, ev, man, mode):
     for s_ in ('left', 'bottom'):
         ax.spines[s_].set_color(GRID)
     ax.tick_params(colors=INK2, labelsize=8, length=3)
-    bits = [f"+{r.hours_pre:.0f}h before" if r.rows_pre else None,
-            f"+{r.hours_post:.0f}h after" if r.rows_post else None]
-    bits = [b for b in bits if b]
-    ax.set_title(f"Event {ev}  ({sh['t'].iloc[0]:%Y-%m-%d})\n{' · '.join(bits) or 'unchanged'}",
+    # label the ACTUAL window relative to onset / event end - that is what was asked
+    # for - not the size of the block appended to SEP-EC's own span
+    hb, ha = r.hours_before_onset, r.hours_after_end
+    ax.set_title(f"Event {ev}  ({sh['t'].iloc[0]:%Y-%m-%d})\n"
+                 f"{hb:.0f}h before onset · {ha:.0f}h after end",
                  fontsize=9, color=INK, pad=6, loc='left')
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M'))
     ax.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=4))
