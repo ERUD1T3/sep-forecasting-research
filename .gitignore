@@ -244,9 +244,11 @@ SEP-EC-24h-safe/extra_catalog_events/
 SEP-EC-24h-exact/full/
 SEP-EC-24h-exact/extra_catalog_events/
 rebuild24/
+SEP-C-unnormalized/*.csv
 
 # local copies of cloud-synced source folders
 SEPForecasting Files/
 SEP_Josias/
 sep-forecasting-nasa/
 
+.DS_Store
