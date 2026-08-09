@@ -5,7 +5,9 @@ import pandas as pd
 
 ROOT = "/Users/josiasmoukpe/Desktop/florida tech exit/sep-forecasting-research"
 SHIP = os.path.join(ROOT, 'full')
-OUT = os.path.join(ROOT, 'SEP-EC-24h')
+import sys as _s
+VERSION = _s.argv[1] if len(_s.argv) > 1 else 'safe'
+OUT = os.path.join(ROOT, f'SEP-EC-24h-{VERSION}')
 FAIL, OKS = [], []
 
 
@@ -44,15 +46,11 @@ for ev in sorted(ship):
         continue
     for c in a.columns:
         nc = ren(c)
-        if c in CME_ATTR:
-            cme_cells += int((a[c].values != b0[nc].values).sum())
-            continue
         if not (a[c].values == b0[nc].values).all():
             bad_ev.append((ev, c))
             nonc_cells += int((a[c].values != b0[nc].values).sum())
-chk(not bad_ev, f"non-CME columns byte-identical in all prov-0 rows ({len(ship)} events)",
-    f"non-CME text differs: {bad_ev[:6]} ({nonc_cells} cells)")
-OKS.append(f"CME attribute cells intentionally changed: {cme_cells:,} (Option B)")
+chk(not bad_ev, f"EVERY column byte-identical in all prov-0 rows ({len(ship)} events)",
+    f"prov-0 text differs: {bad_ev[:6]} ({nonc_cells} cells)")
 
 # ---------- 2. coverage / ordering / grid ----------
 sup = mono = cont = order = 0
@@ -93,18 +91,18 @@ OKS.append(f"lag self-consistency mismatches: {lagbad} (0 expected outside inter
 OKS.append(f"p16.4_tplus6[i] == p16.4_t[i+6] mismatches: {tplusbad}")
 OKS.append(f"delta_log_Intensity formula mismatches: {dlbad} (SEP-EC's own rounding contributes)")
 
-# ---------- 4. CME seam continuity ----------
-snap = 0
+# ---------- 4. CME features OFF outside the event ----------
+nz = 0
 for ev in sorted(out):
-    b = pd.read_csv(out[ev])
-    fl = b['is_reconstructed'].values
-    sp = pd.to_numeric(b['CME_DONKI_speed']).values
-    for i in range(1, len(b)):
-        if fl[i] != fl[i - 1] and sp[i - 1] > 0 and sp[i] == 0:
-            # a CME that was active immediately before the seam vanishes at it
-            snap += 1
-chk(snap == 0, "no CME snaps to zero across a provenance seam",
-    f"{snap} seam(s) where an active CME vanishes")
+    b = pd.read_csv(out[ev], dtype=str, keep_default_na=False)
+    r = b[b.is_reconstructed != '0']
+    for c in CME_ATTR:
+        if c == 'cme_donki_time':
+            nz += int((r[c].values != '0').sum())
+        else:
+            nz += int((pd.to_numeric(r[c], errors='coerce').fillna(0) != 0).sum())
+chk(nz == 0, "CME attribute columns are 0 in every restored row (1d)",
+    f"{nz} non-zero CME cells in restored rows")
 
 # ---------- 5. parser audit ----------
 US = re.compile(r'^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}$')

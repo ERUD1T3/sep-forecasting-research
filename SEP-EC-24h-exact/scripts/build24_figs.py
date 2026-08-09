@@ -8,8 +8,10 @@ import numpy as np
 import pandas as pd
 
 ROOT = "/Users/josiasmoukpe/Desktop/florida tech exit/sep-forecasting-research"
-DATA = os.path.join(ROOT, 'SEP-EC-24h', 'full')
-OUTDIR = os.path.join(ROOT, 'SEP-EC-24h', 'figures')
+import sys as _s
+VERSION = _s.argv[1] if len(_s.argv) > 1 else 'safe'
+DATA = os.path.join(ROOT, f'SEP-EC-24h-{VERSION}', 'full')
+OUTDIR = os.path.join(ROOT, f'SEP-EC-24h-{VERSION}', 'figures')
 TARGET = 'p16.4_tplus6'
 
 C_ORIG, C_PRE, C_POST = '#2a78d6', '#eb6834', '#1baf7a'
@@ -83,7 +85,7 @@ def pages(man, mode):
                 ax.set_ylabel(YLAB[mode], fontsize=8.5, color=INK2)
         fig.legend(handles=HANDLES, loc='upper center', ncol=3, frameon=False,
                    fontsize=10, bbox_to_anchor=(0.5, 0.955), labelcolor=INK)
-        fig.suptitle(f'SEP-EC 24h — events {page[0]}-{page[-1]}', fontsize=14, color=INK, y=0.99)
+        fig.suptitle(f'SEP-EC 24h [{VERSION}] — events {page[0]}-{page[-1]}', fontsize=14, color=INK, y=0.99)
         sub = ('p16.4 target channel (EPHIN 16.40 MeV protons at t+6 = +30 min), '
                '1/(cm^2 s sr MeV), log scale  ·  gaps = zero flux' if mode == 'log10'
                else 'ln(1 + p16.4 intensity) — the transform load_file_data(apply_log=True) applies')
@@ -100,7 +102,7 @@ def main():
     os.makedirs(OUTDIR, exist_ok=True)
     for f in glob.glob(os.path.join(OUTDIR, '*.png')):
         os.remove(f)
-    man = pd.read_csv(os.path.join(ROOT, 'SEP-EC-24h', 'manifest.csv'))
+    man = pd.read_csv(os.path.join(ROOT, f'SEP-EC-24h-{VERSION}', 'manifest.csv'))
     for mode in ('log10', 'log1p'):
         pages(man, mode)
     # side-by-side detail

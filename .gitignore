@@ -180,7 +180,8 @@ fit/
 *.png
 # ...but the SEP-EC-untrimmed comparison figures are documentation, keep them
 !SEP-EC-untrimmed/figures/*.png
-!SEP-EC-24h/figures/*.png
+!SEP-EC-24h-safe/figures/*.png
+!SEP-EC-24h-exact/figures/*.png
 
 #MLFlow stuffs
 logs/mlruns/
@@ -238,8 +239,10 @@ rebuild/
 rebuild_patched*/
 SEP-EC-untrimmed/full/
 SEP-EC-untrimmed/extra_catalog_events/
-SEP-EC-24h/full/
-SEP-EC-24h/extra_catalog_events/
+SEP-EC-24h-safe/full/
+SEP-EC-24h-safe/extra_catalog_events/
+SEP-EC-24h-exact/full/
+SEP-EC-24h-exact/extra_catalog_events/
 rebuild24/
 
 # local copies of cloud-synced source folders

@@ -24,7 +24,7 @@ import pandas as pd
 ROOT = "/Users/josiasmoukpe/Desktop/florida tech exit/sep-forecasting-research"
 SHIP = os.path.join(ROOT, 'full')
 EXT = os.path.join(ROOT, 'rebuild24')
-OUT = os.path.join(ROOT, 'SEP-EC-24h')
+OUT = os.path.join(ROOT, 'SEP-EC-24h-safe')
 FULL = os.path.join(OUT, 'full')
 EXTRA = os.path.join(OUT, 'extra_catalog_events')
 
@@ -145,28 +145,8 @@ def main():
 
         # ---- SEP-EC rows: verbatim text, CME attribute columns swapped in ----
         sv = pd.DataFrame({ren(c): s_raw[c] for c in s_raw.columns})
-        ov = r.set_index('Target Timestamp').loc[ship_key[ev]]
-        n_changed = 0
-        row_changed = np.zeros(len(sv), dtype=bool)
-        for c in CME_ATTR_COLS:
-            old_txt = s_raw[c].values.astype(object)
-            if c == 'cme_donki_time':
-                new_txt = np.array([fmt_cme(x) for x in ov[c]], dtype=object)
-                changed = new_txt != old_txt
-            else:
-                old_num = pd.to_numeric(pd.Series(old_txt), errors='coerce').values
-                new_num = pd.to_numeric(pd.Series(ov[c].values), errors='coerce').values
-                changed = ~(np.isclose(old_num, new_num, rtol=1e-9, atol=0.0,
-                                       equal_nan=True))
-                new_txt = np.array([str(x) for x in ov[c].values], dtype=object)
-            # keep SEP-EC's own text wherever the value is unchanged, so the only
-            # textual differences are cells whose VALUE actually moved
-            sv[c] = np.where(changed, new_txt, old_txt)
-            n_changed += int(changed.sum())
-            row_changed |= changed
         sv['is_reconstructed'] = '0'
-        changelog.append(dict(event=ev, cme_cells_changed=n_changed,
-                              cme_rows_changed=int(row_changed.sum()),
+        changelog.append(dict(event=ev, cme_cells_changed=0, cme_rows_changed=0,
                               shipped_rows=len(sv)))
 
         def block(src, flag):
@@ -175,8 +155,9 @@ def main():
                 nc = ren(c)
                 if c in TSCOLS:
                     h[nc] = [fmt(t) for t in src[c]]
-                elif c == 'cme_donki_time':
-                    h[nc] = [fmt_cme(x) for x in src[c]]
+                elif c in CME_ATTR_COLS:
+                    # CME features are OFF outside the event (Philip 1d, clarified)
+                    h[nc] = '0'
                 elif c == 'Event ID':
                     h[nc] = s_raw['Event ID'].iloc[0]
                 else:
@@ -206,13 +187,17 @@ def main():
     # the two catalog events SEP-EC dropped, same schema
     for rv in sorted(set(ext) - used):
         src = ext[rv]
+        inside = ((src['Target Timestamp'] >= src['onset'].iloc[0]) &
+                  (src['Target Timestamp'] <= src['catalog_end'].iloc[0])).values
         d = pd.DataFrame(index=range(len(src)))
         for c in next(iter(ship_txt.values())).columns:
             nc = ren(c)
             if c in TSCOLS:
                 d[nc] = [fmt(t) for t in src[c]]
             elif c == 'cme_donki_time':
-                d[nc] = [fmt_cme(x) for x in src[c]]
+                d[nc] = np.where(inside, [fmt_cme(x) for x in src[c]], '0')
+            elif c in CME_ATTR_COLS:
+                d[nc] = np.where(inside, src[nc].astype(str).values, '0')
             elif c == 'Event ID':
                 d[nc] = rv
             else:
